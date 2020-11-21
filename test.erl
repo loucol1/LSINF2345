@@ -4,8 +4,10 @@
 
 test_function()->
   List_node = linkedlist:create_list_node(5),
-  [H|T] = linkedlist:node_initialisation(List_node),
-  H ! #{message => "time"}.
+  [H1,H2|T] = linkedlist:node_initialisation(List_node),
+  H2 ! #{message => "time"}.
+  %H1 ! #{message => "get_neighbors"}.
+
 
 bidon()->
   receive

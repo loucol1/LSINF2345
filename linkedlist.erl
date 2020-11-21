@@ -31,16 +31,19 @@ sender(IDParent)->
 
 node(View, IDsender)->
   receive
-    #{message := "view" , view := New_View}-> node(New_View); %message recu de la prt du receiver => mise a jour de la view
-    #{message := "time"}-> IDsender ! View  %message recu du main thread => le sender doit envoyer un message a un noeud voisin
-  end,
-  node(View,IDsender).
-
+    #{message := "time"}->
+    IDsender ! View ,  %message recu du main thread => le sender doit envoyer un message a un noeud voisin
+    node(View,IDsender);
+    #{message := "get_neighbors"} -> io:format("neighbors updated : ~p~n", [View]),
+    node(View,IDsender);
+    #{message := "view" , view := New_View}-> io:format("neighbors updated : ~p~n", [New_View]),
+       node(New_View, IDsender) %message recu de la prt du receiver => mise a jour de la view
+  end.
 
 
 
 node_create(IDreceiver, View)->
-  io:format("IDreceiver = ~f~n", [IDreceiver]),
+  io:format("IDreceiver = ~w~n", [IDreceiver]),
   register(getId(IDreceiver), spawn(linkedlist, receiver, [View,self()])),
   IDsender = spawn(linkedlist, sender, [self()]),
   node(View, IDsender).
