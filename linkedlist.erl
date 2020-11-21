@@ -1,5 +1,5 @@
 -module(linkedlist).
--export([add/2,getNeighbors/2, receiver/2, sender/1, node/2, node_create/1, create_list_node/1, node_initialisation/1]).
+-export([add/2,getNeighbors/2, receiver/2, sender/1, node/2, node_create/2, create_list_node/1, node_initialisation/1, getId/1]).
 
 
 
@@ -24,8 +24,8 @@ receiver(View, IDParent)->
 sender(IDParent)->
   receive
     [#{id_neighbors := ID, age_neighbors:= Age}|T]-> % le sender va devoir envoyer un message a un autre node. Pour le moment, il l'envoie au premier noeud de la list
-      ID ! #{idsender=> self(), list_neighbors=> T}, %io:format("time receive in the sender~n", [])
-      io:format("time receive in the sender~n", [])
+      getId(ID) ! #{idsender => self(), list_neighbors=> T}, %io:format("time receive in the sender~n", [])
+      io:format("time receive in the sender 22222~n", [])
     end,
     sender(IDParent).
 
@@ -39,8 +39,9 @@ node(View, IDsender)->
 
 
 
-node_create(View)->
-  spawn(linkedlist, receiver, [View,self()]),
+node_create(IDreceiver, View)->
+  io:format("IDreceiver = ~f~n", [IDreceiver]),
+  register(getId(IDreceiver), spawn(linkedlist, receiver, [View,self()])),
   IDsender = spawn(linkedlist, sender, [self()]),
   node(View, IDsender).
 
@@ -53,4 +54,7 @@ create_list_node(NbrNode,List)-> create_list_node(NbrNode-1, add(NbrNode, List))
 node_initialisation(A)->node_initialisation(A,[]).
 node_initialisation([],Acc)-> Acc;
 node_initialisation([#{id := ID, list_neighbors := List_neigh} |T], Acc)->
-  node_initialisation(T, lists:append( [spawn(linkedlist, node_create, [List_neigh])] , Acc) ).
+  node_initialisation(T, lists:append( [spawn(linkedlist, node_create, [ID, List_neigh])] , Acc) ).
+
+
+getId(Nbr)->list_to_atom(integer_to_list(Nbr)).
