@@ -1,5 +1,5 @@
 -module(linkedlist).
--export([add/2,getNeighbors/2, receiver/2, sender/1, node/2, node_create/2, create_list_node/1, node_initialisation/1, getId/1, increaseAge/1, getHighestAge/1, select_peer_random/1]).
+-export([add/2,getNeighbors/2, receiver/2, sender/1, node/2, node_create/2, create_list_node/1, node_initialisation/1, getId/1, increaseAge/1, getHighestAge/1, select_peer_random/1, min_age/2, remove_older/2]).
 
 
 
@@ -81,3 +81,40 @@ end.
 
 select_peer_random(View) ->
     lists:nth(rand:uniform(length(View)), View).
+
+
+
+
+%do_i_have_to_delete([], Element)->'false'; %return true if there is an other element in the view with a lower age
+%do_i_have_to_delete([#{id_neighbors := ID, age_neighbors := Nbr}|T], #{id_neighbors := ID_elem, age_neighbors := Nbr_elem})->
+%  if ID =:= ID_elem , Nbr_elem > Nbr -> 'true';
+%  true -> do_i_have_to_delete(T, #{id_neighbors => ID_elem, age_neighbors => Nbr_elem})
+%end.
+
+%delete_element_in_View(View, Element)->delete_element_in_View(View, Element, []).
+%delete_element_in_View([], Element, Acc)->lists:reverse(Acc);
+%delete_element_in_View([#{id_neighbors := ID, age_neighbors := Nbr}|T], #{id_neighbors := ID_elem, age_neighbors := Nbr_elem}, Acc)->
+%  if
+
+
+%delete_duplicate(View)-> delete_duplicate(lists:reverse(sets:to_list(sets:from_list(View)), []). %permet d'enlever des elements qui ont le meme ID et le meme age
+%delete_duplicate([], Acc)->lists:reverse(Acc);
+%delete_duplicate([#{id_neighbors := ID, age_neighbors := Nbr}|T], Acc )->
+
+
+
+min_age([], #{id_neighbors := ID_min, age_neighbors := Nbr_min})-> #{id_neighbors => ID_min, age_neighbors => Nbr_min};
+min_age([#{id_neighbors := ID, age_neighbors := Nbr}|T], #{id_neighbors := ID_min, age_neighbors := Nbr_min})->
+if ID =:= ID_min , Nbr<Nbr_min -> min_age(T, #{id_neighbors => ID_min, age_neighbors => Nbr});
+true -> min_age(T, #{id_neighbors => ID_min, age_neighbors => Nbr_min})
+end.
+
+
+remove_older(Tuple_ref, View)-> remove_older(Tuple_ref, View, [], 'false').
+remove_older(#{id_neighbors := ID_ref, age_neighbors := Nbr_ref}, [], Acc, Flag )-> lists:reverse(Acc);
+remove_older(#{id_neighbors := ID_ref, age_neighbors := Nbr_ref}, [#{id_neighbors := ID, age_neighbors := Nbr}|T], Acc, Flag)->
+  if ID_ref =:= ID , Nbr>Nbr_ref -> remove_older(#{id_neighbors => ID_ref, age_neighbors => Nbr_ref}, T, Acc, Flag);
+  ID_ref =:= ID, Nbr =:= Nbr_ref , Flag =:= 'false' -> remove_older(#{id_neighbors => ID_ref, age_neighbors => Nbr_ref}, T, [#{id_neighbors => ID, age_neighbors => Nbr}|Acc], 'true');
+  ID_ref =:= ID, Nbr =:= Nbr_ref , Flag =:= 'true' -> remove_older (#{id_neighbors => ID_ref, age_neighbors => Nbr_ref}, T, Acc, 'true');
+  true -> remove_older(#{id_neighbors => ID_ref, age_neighbors => Nbr_ref}, T, [#{id_neighbors => ID, age_neighbors => Nbr}|Acc], Flag)
+end.
