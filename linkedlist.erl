@@ -1,5 +1,5 @@
 -module(linkedlist).
--export([add/2,getNeighbors/2, receiver/2, sender/1, node/2, node_create/2, create_list_node/1, node_initialisation/1, getId/1]).
+-export([add/2,getNeighbors/2, receiver/2, sender/1, node/2, node_create/2, create_list_node/1, node_initialisation/1, getId/1, increaseAge/1, getHighestAge/1, select_peer_random/1]).
 
 
 
@@ -61,3 +61,23 @@ node_initialisation([#{id := ID, list_neighbors := List_neigh} |T], Acc)->
 
 
 getId(Nbr)->list_to_atom(integer_to_list(Nbr)).
+
+
+increaseAge(View)->increaseAge(View, []).
+increaseAge([], Acc)-> lists:reverse(Acc);
+increaseAge([#{id_neighbors := ID, age_neighbors := Nbr}|T], Acc) -> increaseAge(T, lists:append([#{id_neighbors => ID, age_neighbors => Nbr+1}], Acc)).
+
+
+%input : a vieuw
+% output : getHighestAge renvoie le neighbor avec le plus grand age.
+%Si deux neighbor ont le meme age, getHighestAge renvoie le premier neighbor qui apparait dans la liste
+getHighestAge(View)-> getHighestAge(View, #{id_neighbors=> -1, age_neighbors => -1}).
+getHighestAge([], Acc)-> Acc;
+getHighestAge([#{id_neighbors := ID, age_neighbors := Nbr}|T], #{id_neighbors := IDMax, age_neighbors := NbrMax}) ->
+  if Nbr>NbrMax -> getHighestAge(T, #{id_neighbors => ID, age_neighbors => Nbr});
+  true -> getHighestAge(T, #{id_neighbors => IDMax, age_neighbors => NbrMax})
+end.
+
+
+select_peer_random(View) ->
+    lists:nth(rand:uniform(length(View)), View).
