@@ -1,5 +1,5 @@
 -module(linkedlist).
--export([create_list_node/1, node_initialisation/4, getId/1]).
+-export([create_list_node/1, node_initialisation/4, getId/1, node_create/5, receiver/5, sender/4, node/5]).
 
 
 
@@ -46,6 +46,7 @@ sender(IDParent, H, S, C)->
 
 
 node(View, IDsender, H, S, C)->
+  io:format("ligne 49 :~n", []),
   receive
     #{message := "time"}->
     IDsender ! View ,  %message recu du main thread => le sender doit envoyer un message a un noeud voisin
