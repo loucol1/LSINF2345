@@ -1,5 +1,7 @@
 -module(linkedlist).
--export([]).
+-export([create_list_node/1, node_initialisation/4, getId/1]).
+
+
 
 
 
@@ -19,7 +21,7 @@ receiver(View, IDParent, H, S, C)->
       % if pull
       View_select = view_select(H, S, C, View_receive, View),
       New_view = increaseAge(View_select),
-      IDParent ! New_view
+      IDParent ! #{message => "view_receiver", view => New_view}
     end,
 receiver(New_view, IDParent, H, S, C).
 
@@ -37,7 +39,7 @@ sender(IDParent, H, S, C)->
       % if pull
       
       View_increase_Age = increaseAge(View_permute),
-      IDParent ! View_increase_Age
+      IDParent ! #{message => "view_sender", view => View_increase_Age}
 
     end,
     sender(IDParent, H, S, C).
@@ -49,17 +51,21 @@ node(View, IDsender, H, S, C)->
     IDsender ! View ,  %message recu du main thread => le sender doit envoyer un message a un noeud voisin
     node(View,IDsender, H, S, C);
     #{message := "get_neighbors"} -> 
-      io:format("neighbors updated : ~p~n", [View]),
       node(View,IDsender, H, S, C);
-    #{message := "view" , view := New_View}-> 
-      io:format("neighbors updated : ~p~n", [New_View]),
-      node(New_View, IDsender, H, S, C) %message recu de la prt du receiver => mise a jour de la view
+    #{message := "view_receiver" , view := New_View}-> 
+      if self() =:= '1' ->
+        io:format("neighbors updated : ~p~n", [New_View]),
+        node(New_View, IDsender, H, S, C); %message recu de la prt du receiver => mise a jour de la view
+      true ->
+         node(New_View, IDsender, H, S, C) %message recu de la prt du receiver => mise a jour de la view
+      end;
+    #{message := "view_sender" , view := New_View}-> 
+      node(New_View, IDsender, H, S, C) %message recu de la prt du sender => mise a jour de la view
   end.
 
 
 
 node_create(IDreceiver, View, H, S, C)->
-  io:format("IDreceiver = ~w~n", [IDreceiver]),
   register(getId(IDreceiver), spawn(linkedlist, receiver, [View,self(), H, S, C])),
   IDsender = spawn(linkedlist, sender, [self(), H, S, C]),
   node(View, IDsender, H, S, C).
@@ -73,7 +79,7 @@ create_list_node(NbrNode,List)-> create_list_node(NbrNode-1, add(NbrNode, List))
 node_initialisation(A, H, S, C)->node_initialisation(A, [], H, S, C).
 node_initialisation([], Acc, H, S, C)-> Acc;
 node_initialisation([#{id := ID, list_neighbors := List_neigh} |T], Acc, H, S, C)->
-  node_initialisation(T, lists:append( [spawn(linkedlist, node_create, [ID, List_neigh, H, S, C])]), H, S, C).
+  node_initialisation(T, lists:append([spawn(linkedlist, node_create, [ID, List_neigh, H, S, C])], Acc), H, S, C).
 
 
 getId(Nbr)->list_to_atom(integer_to_list(Nbr)).
