@@ -1,5 +1,5 @@
 -module(linkedlist).
--export([nbr_to_remove/2, add/2,getNeighbors/2, receiver/2, sender/1, node/2, node_create/2, create_list_node/1, node_initialisation/1, getId/1, increaseAge/1, getHighestAge/1, select_peer_random/1, min_age/2, remove_older/2, test_remove_duplicate/0]).
+-export([]).
 
 
 
@@ -13,51 +13,67 @@ getNeighbors(IDNode,[])-> "error, IDNode is not in the given list";
 getNeighbors(IDNode, [#{id := IDNode,list_neighbors:= List_neigh}|T])-> List_neigh;
 getNeighbors(IDNode, [H|T])->getNeighbors(IDNode, T).
 
-receiver(View, IDParent)->
+receiver(View, IDParent, H, S, C)->
   receive
-    #{idsender := IDsender, list_neighbors := List_neigh}-> %le receiver recoit une view d'un autre noeud. Pour le moment, il l'append a sa list de view
-      io:format("time receive in the receiver~n", []),
-      IDParent ! #{message =>"view", view => lists:append(List_neigh,View)}, %mise a jour de la view chez le noeud parent
-      receiver(lists:append(List_neigh,View), IDParent)
-    end.
-
-sender(IDParent)->
-  receive
-    [#{id_neighbors := ID, age_neighbors:= Age}|T]-> % le sender va devoir envoyer un message a un autre node. Pour le moment, il l'envoie au premier noeud de la list
-      getId(ID) ! #{idsender => self(), list_neighbors=> T}, %io:format("time receive in the sender~n", [])
-      io:format("time receive in the sender 22222~n", [])
+    View_receive -> %le receiver recoit une view d'un autre noeud. Pour le moment, il l'append a sa list de view
+      % if pull
+      View_select = view_select(H, S, C, View_receive, View),
+      New_view = increaseAge(View_select),
+      IDParent ! New_view
     end,
-    sender(IDParent).
+receiver(New_view, IDParent, H, S, C).
 
-node(View, IDsender)->
+sender(IDParent, H, S, C)->
+  receive
+    View-> % le sender va devoir envoyer un message a un autre node. Pour le moment, il l'envoie au premier noeud de la list
+      #{id_neighbors := Id_Peer, age_neighbors := Age} = select_peer_random(View),
+      % if push
+      Buffer = [#{id_neighbors=>self(), age_neighbors=>0}],
+      View_permute = highest_age_to_end(View, H),
+      {First, Second} = lists:split(min(length(View_permute), floor(c/2)-1), View_permute),
+      Buffer_append = lists:append(Buffer, First),
+      getId(Id_Peer) ! Buffer_append,
+
+      % if pull
+      
+      View_increase_Age = increaseAge(View_permute),
+      IDParent ! View_increase_Age
+
+    end,
+    sender(IDParent, H, S, C).
+
+
+node(View, IDsender, H, S, C)->
   receive
     #{message := "time"}->
     IDsender ! View ,  %message recu du main thread => le sender doit envoyer un message a un noeud voisin
-    node(View,IDsender);
-    #{message := "get_neighbors"} -> io:format("neighbors updated : ~p~n", [View]),
-    node(View,IDsender);
-    #{message := "view" , view := New_View}-> io:format("neighbors updated : ~p~n", [New_View]),
-       node(New_View, IDsender) %message recu de la prt du receiver => mise a jour de la view
+    node(View,IDsender, H, S, C);
+    #{message := "get_neighbors"} -> 
+      io:format("neighbors updated : ~p~n", [View]),
+      node(View,IDsender, H, S, C);
+    #{message := "view" , view := New_View}-> 
+      io:format("neighbors updated : ~p~n", [New_View]),
+      node(New_View, IDsender, H, S, C) %message recu de la prt du receiver => mise a jour de la view
   end.
 
 
 
-node_create(IDreceiver, View)->
+node_create(IDreceiver, View, H, S, C)->
   io:format("IDreceiver = ~w~n", [IDreceiver]),
-  register(getId(IDreceiver), spawn(linkedlist, receiver, [View,self()])),
-  IDsender = spawn(linkedlist, sender, [self()]),
-  node(View, IDsender).
+  register(getId(IDreceiver), spawn(linkedlist, receiver, [View,self(), H, S, C])),
+  IDsender = spawn(linkedlist, sender, [self(), H, S, C]),
+  node(View, IDsender, H, S, C).
 
 
 create_list_node(NbrNode)->create_list_node(NbrNode,[]).
 create_list_node(0,Acc)->lists:reverse(Acc);
 create_list_node(NbrNode,List)-> create_list_node(NbrNode-1, add(NbrNode, List)).
 
-
-node_initialisation(A)->node_initialisation(A,[]).
-node_initialisation([],Acc)-> Acc;
-node_initialisation([#{id := ID, list_neighbors := List_neigh} |T], Acc)->
-  node_initialisation(T, lists:append( [spawn(linkedlist, node_create, [ID, List_neigh])] , Acc) ).
+% A is a list of node (output of create_list_node)
+node_initialisation(A, H, S, C)->node_initialisation(A, [], H, S, C).
+node_initialisation([], Acc, H, S, C)-> Acc;
+node_initialisation([#{id := ID, list_neighbors := List_neigh} |T], Acc, H, S, C)->
+  node_initialisation(T, lists:append( [spawn(linkedlist, node_create, [ID, List_neigh, H, S, C])]), H, S, C).
 
 
 getId(Nbr)->list_to_atom(integer_to_list(Nbr)).
@@ -133,3 +149,31 @@ nbr_to_remove(X, Y)->
   Y=<0->0;
   true-> min(X,Y)
 end.
+
+% La fonction place les H plus vieux éléments à la fin de la liste View
+highest_age_to_end(View, H) -> highest_age_to_end(View, H, []).
+highest_age_to_end(View, 0, Acc) -> lists:append(View, Acc);
+highest_age_to_end(View, H, Acc) -> highest_age_to_end(lists:delete(getHighestAge(View), View), H-1, getHighestAge(View)).
+
+% La fonction retire les H plus view élements de la liste View
+remove_highest_age(View, 0) -> View;
+remove_highest_age(View, H) -> 
+  remove_highest_age(lists:delete(getHighestAge(View),View),H-1).
+
+% La fonction retire les S premiers éléments de la liste
+remove_first_element(View, 0) -> View;
+remove_first_element([H|T], S) -> remove_first_element(T, S-1).
+
+view_select(H, S, C, View_receive, View) ->
+  View_append = lists:append(View, View_receive),
+  View_without_duplicate = remove_duplicate(View_append),
+  View_remove_old = remove_highest_age(View_without_duplicate, nbr_to_remove(H, length(View_without_duplicate)-C)),
+  View_remove_first = remove_first_element(View_remove_old, nbr_to_remove(S, length(View_remove_old)-C)),
+  remove_random(View_remove_first, max(0, length(View_remove_first)-C)).
+
+
+% N est le nombre d element a enlever
+remove_random (View, 0) ->
+  View;
+remove_random (View, N) ->
+  remove_random(lists:delete(select_peer_random(View), View), N-1).

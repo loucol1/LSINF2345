@@ -2,12 +2,13 @@
 
 -import(linkedlist, [getHighestAge/1]).
 
--export([test/0, select_peer_random/1, test_highest_age_to_end/0, test_remove_highest_age/0, test_remove_first_element/0]).
+-export([test/1, select_peer_random/1, test_highest_age_to_end/0, test_remove_highest_age/0, test_remove_first_element/0, test_remove/0]).
 
-test() ->
+test(A) ->
     timer:sleep(1000),
      io:format("Coucou Louiiiiiiiiiiis~n", []),
-    test().
+     C = A,
+    test(C+1).
 
 select_peer_random(View) ->
     lists:nth(rand:uniform(length(View)), View).
@@ -42,3 +43,14 @@ remove_first_element([H|T], S) -> remove_first_element(T, S-1).
 test_remove_first_element() ->
   List_test =  [#{age_neighbors => 2,id_neighbors => 3}, #{age_neighbors => 5,id_neighbors => 5},#{age_neighbors => 1,id_neighbors => 5}],
   remove_first_element(List_test, 2).
+
+
+% N est le nombre d element a enlever
+remove_random (View, 0) ->
+  View;
+remove_random (View, N) ->
+  remove_random(lists:delete(select_peer_random(View), View), N-1).
+
+test_remove() ->
+  List_test =  [#{age_neighbors => 2,id_neighbors => 3}, #{age_neighbors => 5,id_neighbors => 5},#{age_neighbors => 1,id_neighbors => 5}],
+  remove_random(List_test, 1).
