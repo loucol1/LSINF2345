@@ -1,5 +1,5 @@
 -module(linkedlist).
--export([add/2,getNeighbors/2, receiver/2, sender/1, node/2, node_create/2, create_list_node/1, node_initialisation/1, getId/1, increaseAge/1, getHighestAge/1, select_peer_random/1, min_age/2, remove_older/2, test_remove_duplicate/0]).
+-export([nbr_to_remove/2, add/2,getNeighbors/2, receiver/2, sender/1, node/2, node_create/2, create_list_node/1, node_initialisation/1, getId/1, increaseAge/1, getHighestAge/1, select_peer_random/1, min_age/2, remove_older/2, test_remove_duplicate/0]).
 
 
 
@@ -126,3 +126,10 @@ remove_duplicate([H|T], Acc) -> remove_duplicate(T, remove_older(H, Acc)).
 test_remove_duplicate() ->
   List = [#{id_neighbors => 1, age_neighbors => 8}, #{id_neighbors => 2, age_neighbors => 5}, #{id_neighbors => 1, age_neighbors => 8}, #{id_neighbors => 3, age_neighbors => 0}, #{id_neighbors => 2, age_neighbors => 8} ],
   remove_duplicate(List).
+
+
+nbr_to_remove(X, Y)->
+  if X=<0 -> 0;
+  Y=<0->0;
+  true-> min(X,Y)
+end.
