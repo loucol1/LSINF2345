@@ -37,7 +37,7 @@ sender(IDParent, H, S, C)->
       getId(Id_Peer) ! Buffer_append,
 
       % if pull
-      
+
       View_increase_Age = increaseAge(View_permute),
       IDParent ! #{message => "view_sender", view => View_increase_Age}
 
@@ -50,16 +50,16 @@ node(View, IDsender, H, S, C)->
     #{message := "time"}->
     IDsender ! View ,  %message recu du main thread => le sender doit envoyer un message a un noeud voisin
     node(View,IDsender, H, S, C);
-    #{message := "get_neighbors"} -> 
+    #{message := "get_neighbors"} ->
       node(View,IDsender, H, S, C);
-    #{message := "view_receiver" , view := New_View}-> 
+    #{message := "view_receiver" , view := New_View}->
       if self() =:= '1' ->
         io:format("neighbors updated : ~p~n", [New_View]),
         node(New_View, IDsender, H, S, C); %message recu de la prt du receiver => mise a jour de la view
       true ->
          node(New_View, IDsender, H, S, C) %message recu de la prt du receiver => mise a jour de la view
       end;
-    #{message := "view_sender" , view := New_View}-> 
+    #{message := "view_sender" , view := New_View}->
       node(New_View, IDsender, H, S, C) %message recu de la prt du sender => mise a jour de la view
   end.
 
@@ -79,6 +79,7 @@ create_list_node(NbrNode,List)-> create_list_node(NbrNode-1, add(NbrNode, List))
 node_initialisation(A, H, S, C)->node_initialisation(A, [], H, S, C).
 node_initialisation([], Acc, H, S, C)-> Acc;
 node_initialisation([#{id := ID, list_neighbors := List_neigh} |T], Acc, H, S, C)->
+  io:format("ligne 83: ~n", []),
   node_initialisation(T, lists:append([spawn(linkedlist, node_create, [ID, List_neigh, H, S, C])], Acc), H, S, C).
 
 
@@ -163,7 +164,7 @@ highest_age_to_end(View, H, Acc) -> highest_age_to_end(lists:delete(getHighestAg
 
 % La fonction retire les H plus view élements de la liste View
 remove_highest_age(View, 0) -> View;
-remove_highest_age(View, H) -> 
+remove_highest_age(View, H) ->
   remove_highest_age(lists:delete(getHighestAge(View),View),H-1).
 
 % La fonction retire les S premiers éléments de la liste

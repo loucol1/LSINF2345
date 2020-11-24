@@ -7,7 +7,6 @@ main(H, C, S, Pull) ->
     Linked_list = create_list_node(N),
     io:format("Linked_list ligne 7: ~p~n", [Linked_list]),
     List_id_node = node_initialisation(Linked_list, H, S, C),
-     io:format("List node ligne 8: ~p~n", [List_id_node]),
     compteur(List_id_node).
 
 
@@ -18,6 +17,6 @@ compteur(List_node) ->
 
 
 broadcast_timeout([]) -> 0;
-broadcast_timeout([H|T]) ->
-    H ! #{message => "time"},
+broadcast_timeout([U|T]) ->
+    U ! #{message => "time"},
     broadcast_timeout(T).
