@@ -1,5 +1,5 @@
 -module(linkedlist).
--export([create_list_node/1, node_initialisation/4, getId/1, node_create/5, receiver/5, sender/4, node/5]).
+-export([create_list_node/1, node_initialisation/4, getId/1, node_create/5, receiver/5, sender/5, node/6]).
 
 
 
@@ -25,14 +25,14 @@ receiver(View, IDParent, H, S, C)->
     end,
 receiver(New_view, IDParent, H, S, C).
 
-sender(IDParent, H, S, C)->
+sender(IDParent,IDReceiver_itself, H, S, C)->
   receive
     View-> % le sender va devoir envoyer un message a un autre node. Pour le moment, il l'envoie au premier noeud de la list
       #{id_neighbors := Id_Peer, age_neighbors := Age} = select_peer_random(View),
       % if push
-      Buffer = [#{id_neighbors=>self(), age_neighbors=>0}],
+      Buffer = [#{id_neighbors=>IDReceiver_itself, age_neighbors=>0}],
       View_permute = highest_age_to_end(View, H),
-      {First, Second} = lists:split(min(length(View_permute), floor(c/2)-1), View_permute),
+      {First, Second} = lists:split(min(length(View_permute), floor(C/2)-1), View_permute),
       Buffer_append = lists:append(Buffer, First),
       getId(Id_Peer) ! Buffer_append,
 
@@ -42,34 +42,33 @@ sender(IDParent, H, S, C)->
       IDParent ! #{message => "view_sender", view => View_increase_Age}
 
     end,
-    sender(IDParent, H, S, C).
+    sender(IDParent,IDReceiver_itself, H, S, C).
 
 
-node(View, IDsender, H, S, C)->
-  io:format("ligne 49 :~n", []),
+node(View, IDsender,IDreceiver, H, S, C)->
   receive
     #{message := "time"}->
     IDsender ! View ,  %message recu du main thread => le sender doit envoyer un message a un noeud voisin
-    node(View,IDsender, H, S, C);
+    node(View,IDsender,IDreceiver, H, S, C);
     #{message := "get_neighbors"} ->
-      node(View,IDsender, H, S, C);
+      node(View,IDsender,IDreceiver, H, S, C);
     #{message := "view_receiver" , view := New_View}->
-      if self() =:= '1' ->
+      if IDreceiver =:= 1 ->
         io:format("neighbors updated : ~p~n", [New_View]),
-        node(New_View, IDsender, H, S, C); %message recu de la prt du receiver => mise a jour de la view
+        node(New_View, IDsender,IDreceiver, H, S, C); %message recu de la prt du receiver => mise a jour de la view
       true ->
-         node(New_View, IDsender, H, S, C) %message recu de la prt du receiver => mise a jour de la view
+         node(New_View, IDsender,IDreceiver, H, S, C) %message recu de la prt du receiver => mise a jour de la view
       end;
     #{message := "view_sender" , view := New_View}->
-      node(New_View, IDsender, H, S, C) %message recu de la prt du sender => mise a jour de la view
+      node(New_View, IDsender,IDreceiver, H, S, C) %message recu de la prt du sender => mise a jour de la view
   end.
 
 
 
 node_create(IDreceiver, View, H, S, C)->
   register(getId(IDreceiver), spawn(linkedlist, receiver, [View,self(), H, S, C])),
-  IDsender = spawn(linkedlist, sender, [self(), H, S, C]),
-  node(View, IDsender, H, S, C).
+  IDsender = spawn(linkedlist, sender, [self(),IDreceiver, H, S, C]),
+  node(View, IDsender,IDreceiver, H, S, C).
 
 
 create_list_node(NbrNode)->create_list_node(NbrNode,[]).
@@ -80,7 +79,6 @@ create_list_node(NbrNode,List)-> create_list_node(NbrNode-1, add(NbrNode, List))
 node_initialisation(A, H, S, C)->node_initialisation(A, [], H, S, C).
 node_initialisation([], Acc, H, S, C)-> Acc;
 node_initialisation([#{id := ID, list_neighbors := List_neigh} |T], Acc, H, S, C)->
-  io:format("ligne 83: ~n", []),
   node_initialisation(T, lists:append([spawn(linkedlist, node_create, [ID, List_neigh, H, S, C])], Acc), H, S, C).
 
 
