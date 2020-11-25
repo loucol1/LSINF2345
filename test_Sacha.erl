@@ -5,8 +5,8 @@
 -export([test/1, select_peer_random/1, test_highest_age_to_end/0, test_remove_highest_age/0, test_remove_first_element/0, test_remove/0]).
 
 test(A) ->
-    timer:sleep(1000),
-     %io:format("Coucou Louiiiiiiiiiiis~n", []),
+    timer:sleep(10000),
+     io:format("Self = ~p~n", [self()]),
      C = A,
     test(C+1).
 

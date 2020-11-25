@@ -1,5 +1,5 @@
 -module(linkedlist).
--export([create_list_node/1, node_initialisation/5, getId/1, node_create/6, receiver/6, sender/6, node/6]).
+-export([create_list_node/1, node_initialisation/5, getId/1, node_create/6, receiver/7, sender/6, node/6]).
 
 
 
@@ -15,13 +15,12 @@ getNeighbors(IDNode,[])-> "error, IDNode is not in the given list";
 getNeighbors(IDNode, [#{id := IDNode,list_neighbors:= List_neigh}|T])-> List_neigh;
 getNeighbors(IDNode, [H|T])->getNeighbors(IDNode, T).
 
-receiver(View, IDParent, H, S, C, Pull)->
+receiver(View, IDParent, Id_receiver, H, S, C, Pull)->
   receive
     #{id_sender_brut := IDsender, view := View_receive}-> %le receiver recoit une view d'un autre noeud. Pour le moment, il l'append a sa list de view
       % if pull
       if Pull =:= 'true'->
-        io:format("self = ~p~n", [self()]),
-        Buffer = [#{id_neighbors=>list_to_integer(atom_to_list(self())), age_neighbors=>0}],
+        Buffer = [#{id_neighbors=>Id_receiver, age_neighbors=>0}],
         View_permute = highest_age_to_end(View, H),
         {First, Second} = lists:split(min(length(View_permute), floor(C/2)-1), View_permute),
         Buffer_append = lists:append(Buffer, First),
@@ -35,7 +34,7 @@ receiver(View, IDParent, H, S, C, Pull)->
         IDParent ! #{message => "view_receiver", view => New_view}
       end
     end,
-receiver(New_view, IDParent, H, S, C, Pull).
+receiver(New_view, IDParent, Id_receiver, H, S, C, Pull).
 
 sender(IDParent,IDReceiver_itself, H, S, C, Pull)->
   receive
@@ -85,7 +84,7 @@ node(View, IDsender,IDreceiver, H, S, C)->
 
 
 node_create(IDreceiver, View, H, S, C, Pull)->
-  register(getId(IDreceiver), spawn(linkedlist, receiver, [View,self(), H, S, C, Pull])),
+  register(getId(IDreceiver), spawn(linkedlist, receiver, [View,self(), IDreceiver, H, S, C, Pull])),
   IDsender = spawn(linkedlist, sender, [self(),IDreceiver, H, S, C, Pull]),
   node(View, IDsender,IDreceiver, H, S, C).
 
