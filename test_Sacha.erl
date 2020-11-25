@@ -6,7 +6,7 @@
 
 test(A) ->
     timer:sleep(1000),
-     io:format("Coucou Louiiiiiiiiiiis~n", []),
+     %io:format("Coucou Louiiiiiiiiiiis~n", []),
      C = A,
     test(C+1).
 
