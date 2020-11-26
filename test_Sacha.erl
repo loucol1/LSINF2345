@@ -6,9 +6,10 @@
 
 test(A) ->
     timer:sleep(10000),
-     io:format("Self = ~p~n", [self()]),
-     C = A,
-    test(C+1).
+    receive 
+      #{message = M}->
+        io:format("receive message : ~p~n", [M]).
+
 
 select_peer_random(View) ->
     lists:nth(rand:uniform(length(View)), View).

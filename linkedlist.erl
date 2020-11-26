@@ -99,7 +99,9 @@ node(View, IDsender,IDreceiver, H, S, C)->
       node(New_View, IDsender,IDreceiver, H, S, C); %message recu de la prt du sender => mise a jour de la view
     #{message := "dead"} ->
       IDsender ! "dead",
-      getId(IDreceiver)! "dead"
+      getId(IDreceiver)! "dead";
+    #{message := "ask_id_receiver", addresse_retour := Addr} ->
+      Addr ! #{message => "response_id_receiver", id_receiver => IDreceiver}
   end.
 
 
@@ -117,8 +119,8 @@ create_list_node(NbrNode,List)-> create_list_node(NbrNode-1, add(NbrNode, List))
 % A is a list of node (output of create_list_node)
 node_initialisation(A, H, S, C, Pull)->node_initialisation(A, [], H, S, C, Pull).
 node_initialisation([], Acc, H, S, C, Pull)-> Acc;
-node_initialisation([#{id := ID_receiver, list_neighbors := List_neigh} |T], Acc, H, S, C, Pull)->
-  node_initialisation(T, lists:append([spawn(linkedlist, node_create, [ID_receiver, List_neigh, H, S, C, Pull])], Acc), H, S, C, Pull).
+node_initialisation([#{id := ID_receiver_itself, list_neighbors := View} |T], Acc, H, S, C, Pull)->
+  node_initialisation(T, lists:append([spawn(linkedlist, node_create, [ID_receiver_itself, View, H, S, C, Pull])], Acc), H, S, C, Pull).
 
 
 getId(Nbr)->list_to_atom(integer_to_list(Nbr)).
