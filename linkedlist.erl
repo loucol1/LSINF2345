@@ -1,6 +1,6 @@
 -module(linkedlist).
 -export([create_list_node/1, node_initialisation/5, getId/1, node_create/6, receiver/7, sender/6, node/6, select_peer_random/1]).
-
+ 
 
 
 
