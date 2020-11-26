@@ -1,5 +1,5 @@
 -module(linkedlist).
--export([create_list_node/1, node_initialisation/5, getId/1, node_create/6, receiver/7, sender/6, node/6]).
+-export([create_list_node/1, node_initialisation/5, getId/1, node_create/6, receiver/7, sender/6, node/6, select_peer_random/1]).
 
 
 
@@ -17,6 +17,9 @@ getNeighbors(IDNode, [H|T])->getNeighbors(IDNode, T).
 
 receiver(View, IDParent, Id_receiver, H, S, C, Pull)->
   receive
+    "dead" ->
+      0;
+
     #{id_sender_brut := IDsender, view := View_receive}-> %le receiver recoit une view d'un autre noeud. Pour le moment, il l'append a sa list de view
       % if pull
       if Pull =:= 'true'->
@@ -32,12 +35,16 @@ receiver(View, IDParent, Id_receiver, H, S, C, Pull)->
         View_select = view_select(H, S, C, View_receive, View),
         New_view = increaseAge(View_select),
         IDParent ! #{message => "view_receiver", view => New_view}
-      end
-    end,
-receiver(New_view, IDParent, Id_receiver, H, S, C, Pull).
+      end,
+    receiver(New_view, IDParent, Id_receiver, H, S, C, Pull)
+  end.
+
 
 sender(IDParent,IDReceiver_itself, H, S, C, Pull)->
   receive
+    "dead" ->
+      0;
+
     View-> % le sender va devoir envoyer un message a un autre node. Pour le moment, il l'envoie au premier noeud de la list
       #{id_neighbors := Id_Peer, age_neighbors := Age} = select_peer_random(View),
       % if push
@@ -45,6 +52,7 @@ sender(IDParent,IDReceiver_itself, H, S, C, Pull)->
       View_permute = highest_age_to_end(View, H),
       {First, Second} = lists:split(min(length(View_permute), floor(C/2)-1), View_permute),
       Buffer_append = lists:append(Buffer, First),
+      io:format("Self L55: ~p~n", [self()]),
       getId(Id_Peer) ! #{id_sender_brut => self(), view =>  Buffer_append},
 
       % if pull
@@ -54,13 +62,19 @@ sender(IDParent,IDReceiver_itself, H, S, C, Pull)->
             New_View = view_select(H, S, C, View_receive, View_permute),
             View_increase_Age_Pull = increaseAge(New_View),
             IDParent ! #{message => "view_sender", view => View_increase_Age_Pull}
+          
+          after 1500 ->
+            View_increase_Age = increaseAge(View_permute),
+            IDParent ! #{message => "view_sender", view => View_increase_Age}
+
           end;
       true->
       View_increase_Age = increaseAge(View_permute),
       IDParent ! #{message => "view_sender", view => View_increase_Age}
-      end
-    end,
-    sender(IDParent,IDReceiver_itself, H, S, C, Pull).
+      end,
+    sender(IDParent,IDReceiver_itself, H, S, C, Pull)
+  end.
+
 
 
 node(View, IDsender,IDreceiver, H, S, C)->
@@ -78,7 +92,10 @@ node(View, IDsender,IDreceiver, H, S, C)->
          node(New_View, IDsender,IDreceiver, H, S, C) %message recu de la prt du receiver => mise a jour de la view
       end;
     #{message := "view_sender" , view := New_View}->
-      node(New_View, IDsender,IDreceiver, H, S, C) %message recu de la prt du sender => mise a jour de la view
+      node(New_View, IDsender,IDreceiver, H, S, C); %message recu de la prt du sender => mise a jour de la view
+    #{message := "dead"} ->
+      IDsender ! "dead",
+      getId(IDreceiver)! "dead"
   end.
 
 
@@ -96,8 +113,8 @@ create_list_node(NbrNode,List)-> create_list_node(NbrNode-1, add(NbrNode, List))
 % A is a list of node (output of create_list_node)
 node_initialisation(A, H, S, C, Pull)->node_initialisation(A, [], H, S, C, Pull).
 node_initialisation([], Acc, H, S, C, Pull)-> Acc;
-node_initialisation([#{id := ID, list_neighbors := List_neigh} |T], Acc, H, S, C, Pull)->
-  node_initialisation(T, lists:append([spawn(linkedlist, node_create, [ID, List_neigh, H, S, C, Pull])], Acc), H, S, C, Pull).
+node_initialisation([#{id := ID_receiver, list_neighbors := List_neigh} |T], Acc, H, S, C, Pull)->
+  node_initialisation(T, lists:append([spawn(linkedlist, node_create, [ID_receiver, List_neigh, H, S, C, Pull])], Acc), H, S, C, Pull).
 
 
 getId(Nbr)->list_to_atom(integer_to_list(Nbr)).
