@@ -19,13 +19,16 @@ compteur(List_node, N, H, S, C, Pull, Count) ->
         compteur(List_alive, N, H, S, C, Pull, Count +1);
     
     Count =:= 10 -> % recovery phase
-        Peer = select_peer_random(List_node),
+        [Peer|T] =  List_node, %select_peer_random(List_node),
+        io:format("Peer recovery: ~p~n", [Peer]),
         Peer ! #{message => "ask_id_receiver", addresse_retour => self()},
         receive 
             #{message := "response_id_receiver", id_receiver := Id_receiver} ->
-            0
+            0,
+            io:format("receive peer id: ~p~n", [Id_receiver])
         end,
         View = [#{id_neighbors => Id_receiver, age_neighbors => 0}],
+        io:format("View recovery: ~p~n", [View]),
         List_recovery = create_list_recovery(N, 5, View),
         List_address_recovery = node_initialisation(List_recovery, H, S, C, Pull),
         compteur(lists:append(List_node, List_address_recovery), N, H, S, C, Pull, Count+1);

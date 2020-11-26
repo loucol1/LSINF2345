@@ -82,6 +82,11 @@ sender(IDParent,IDReceiver_itself, H, S, C, Pull)->
 
 
 node(View, IDsender,IDreceiver, H, S, C)->
+  if IDreceiver =:= 1 ->
+    io:format("View node : ~p~n", [View]);
+  true -> 0
+  end,
+
   receive
     #{message := "time"}->
     IDsender ! View ,  %message recu du main thread => le sender doit envoyer un message a un noeud voisin
@@ -90,7 +95,7 @@ node(View, IDsender,IDreceiver, H, S, C)->
       node(View,IDsender,IDreceiver, H, S, C);
     #{message := "view_receiver" , view := New_View}->
       if IDreceiver =:= 1 ->
-        io:format("neighbors updated : ~p~n", [New_View]),
+        % io:format("neighbors updated : ~p~n", [New_View]),
         node(New_View, IDsender,IDreceiver, H, S, C); %message recu de la prt du receiver => mise a jour de la view
       true ->
          node(New_View, IDsender,IDreceiver, H, S, C) %message recu de la prt du receiver => mise a jour de la view
@@ -101,8 +106,10 @@ node(View, IDsender,IDreceiver, H, S, C)->
       IDsender ! "dead",
       getId(IDreceiver)! "dead";
     #{message := "ask_id_receiver", addresse_retour := Addr} ->
-      Addr ! #{message => "response_id_receiver", id_receiver => IDreceiver}
+      Addr ! #{message => "response_id_receiver", id_receiver => IDreceiver},
+      node(View, IDsender,IDreceiver, H, S, C)
   end.
+
 
 
 
