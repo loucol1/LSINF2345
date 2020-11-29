@@ -12,23 +12,25 @@ main(N, H, S, C, Pull) ->
 compteur(List_id_node, N, H, S, C, Pull, Second) -> compteur(List_id_node, N, H, S, C, Pull, 0, Second).
 
 compteur(List_id_node, N, H, S, C, Pull, Count, Second) ->
-    timer:sleep(3000),
+    timer:sleep(1000),
     if (Count=:=30) or (Count=:=60) ->
+        io:format("Count = ~p~n", [Count]),
         {Node_to_add, Node_not_to_add} = lists:split(floor(0.2*N), Second),
         List_id_node_new = node_initialisation(Node_to_add, H, S, C, Pull),
         compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, Node_not_to_add);
 
     Count =:= 90 ->
+        io:format("Count = ~p~n", [Count]),
         List_id_node_new = node_initialisation(Second, H, S, C, Pull),
         compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, []);
 
     Count =:= 120 -> % when kill node
+        io:format("Count = ~p~n", [Count]),
         List_alive = node_to_kill(List_id_node, floor(0.6*N)),
-        %io:format("List node: ~p~n", [List_id_node]),
-        %io:format("List alive: ~p~n", [List_alive]),
         compteur(List_alive, N, H, S, C, Pull, Count +1, Second);
     
     Count =:= 150 -> % recovery phase
+        io:format("Count = ~p~n", [Count]),
         Peer = select_peer_random(List_id_node),
         io:format("Peer recovery: ~p~n", [Peer]),
         Peer ! #{message => "ask_id_receiver", addresse_retour => self()},
@@ -42,7 +44,12 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second) ->
         List_recovery = create_list_recovery(N, floor(0.6*floor(0.6*N)), View),
         List_address_recovery = node_initialisation(List_recovery, H, S, C, Pull),
         compteur(lists:append(List_id_node, List_address_recovery), N, H, S, C, Pull, Count+1, Second);
-        
+
+    Count =:= 180 -> % end of the scenario
+        io:format("Count = ~p~n", [Count]),
+        List_alive_end = node_to_kill(List_id_node, length(List_id_node)),
+        io:format("End List alive end = ~p~n", [List_alive_end]);
+
     true ->
         broadcast_timeout(List_id_node),
         compteur(List_id_node, N, H, S, C, Pull, Count + 1, Second)

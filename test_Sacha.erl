@@ -7,9 +7,9 @@
 test(A) ->
     timer:sleep(10000),
     receive 
-      #{message = M}->
-        io:format("receive message : ~p~n", [M]).
-
+      #{message := M}->
+        io:format("receive message : ~p~n", [M])
+    end.
 
 select_peer_random(View) ->
     lists:nth(rand:uniform(length(View)), View).
@@ -18,13 +18,14 @@ select_peer_random(View) ->
 
 % La fonction place les H plus vieux éléments à la fin de la liste View
 highest_age_to_end(View, H) -> highest_age_to_end(View, H, []).
+highest_age_to_end([], H, Acc) -> Acc;
 highest_age_to_end(View, 0, Acc) -> lists:append(View, Acc);
-highest_age_to_end(View, H, Acc) -> highest_age_to_end(lists:delete(getHighestAge(View), View), H-1, getHighestAge(View)).
+highest_age_to_end(View, H, Acc) -> highest_age_to_end(lists:delete(getHighestAge(View), View), H-1, [getHighestAge(View)|Acc]).
 
 
 test_highest_age_to_end() ->
-  List_test =  [#{age_neighbors => 2,id_neighbors => 3}, #{age_neighbors => 5,id_neighbors => 5},#{age_neighbors => 1,id_neighbors => 5}],
-  highest_age_to_end(List_test, 1).
+  List_test =  [#{age_neighbors => 6,id_neighbors => 3}, #{age_neighbors => 2,id_neighbors => 3}, #{age_neighbors => 5,id_neighbors => 5},#{age_neighbors => 1,id_neighbors => 5},#{age_neighbors => 1,id_neighbors => 6}],
+  highest_age_to_end(List_test, 10).
 
 
 % La fonction retire les H plus view élements de la liste View

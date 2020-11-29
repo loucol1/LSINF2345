@@ -1,5 +1,5 @@
 -module(linkedlist).
--export([create_list_node/1, node_initialisation/5, getId/1, node_create/6, receiver/7, sender/6, node/6, select_peer_random/1]).
+-export([create_list_node/1, node_initialisation/5, getId/1, node_create/6, receiver/7, sender/6, node/6, select_peer_random/1, getHighestAge/1]).
 
 
 
@@ -18,8 +18,7 @@ getNeighbors(IDNode, [H|T])->getNeighbors(IDNode, T).
 receiver(View, IDParent, Id_receiver, H, S, C, Pull)->
   receive
     "dead" ->
-      io:format(" receiver dead ~p~n", [getId(Id_receiver)]);
-
+      0;
     #{id_sender_brut := IDsender, view := View_receive}-> %le receiver recoit une view d'un autre noeud. Pour le moment, il l'append a sa list de view
       % if pull
       if Pull =:= 'true'->
@@ -43,11 +42,12 @@ receiver(View, IDParent, Id_receiver, H, S, C, Pull)->
 sender(IDParent,IDReceiver_itself, H, S, C, Pull)->
   receive
     "dead" ->
-      io:format(" sender dead ~p~n", [getId(IDReceiver_itself)]);
+      0;
 
     View-> % le sender va devoir envoyer un message a un autre node. Pour le moment, il l'envoie au premier noeud de la list
       #{id_neighbors := Id_Peer, age_neighbors := Age} = select_peer_random(View),
       % if push
+
       Buffer = [#{id_neighbors=>IDReceiver_itself, age_neighbors=>0}],
       View_permute = highest_age_to_end(View, H),
       {First, Second} = lists:split(min(length(View_permute), floor(C/2)-1), View_permute),
@@ -83,7 +83,7 @@ sender(IDParent,IDReceiver_itself, H, S, C, Pull)->
 
 node(View, IDsender,IDreceiver, H, S, C)->
   if IDreceiver =:= 1 ->
-    io:format("View node : ~p~n", [View]);
+    0;
   true -> 0
   end,
 
@@ -206,8 +206,9 @@ end.
 
 % La fonction place les H plus vieux éléments à la fin de la liste View
 highest_age_to_end(View, H) -> highest_age_to_end(View, H, []).
+highest_age_to_end([], H, Acc) -> Acc;
 highest_age_to_end(View, 0, Acc) -> lists:append(View, Acc);
-highest_age_to_end(View, H, Acc) -> highest_age_to_end(lists:delete(getHighestAge(View), View), H-1, getHighestAge(View)).
+highest_age_to_end(View, H, Acc) -> highest_age_to_end(lists:delete(getHighestAge(View), View), H-1, [getHighestAge(View)|Acc]).
 
 % La fonction retire les H plus view élements de la liste View
 remove_highest_age(View, 0) -> View;
