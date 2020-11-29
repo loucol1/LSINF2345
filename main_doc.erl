@@ -1,25 +1,35 @@
 -module(main_doc).
--export([main/4]).
+-export([main/5]).
 -import(linkedlist, [create_list_node/1, node_initialisation/5, getId/1, select_peer_random/1, node_create/6]).
-
-main(H, C, S, Pull) ->
-    N = 7, % number of node
-    Linked_list = create_list_node(N),
-    List_id_node = node_initialisation(Linked_list, H, S, C, Pull),
-    compteur(List_id_node, N, H, S, C, Pull).
-
-compteur(List_node, N, H, S, C, Pull) -> compteur(List_node, N, H, S, C, Pull, 0).
-
-compteur(List_node, N, H, S, C, Pull, Count) ->
-    if Count =:= 5 -> % when kill node
-        List_alive = node_to_kill(List_node, 1),
-        io:format("List node: ~p~n", [List_node]),
-        io:format("List alive: ~p~n", [List_alive]),
-        timer:sleep(3000),
-        compteur(List_alive, N, H, S, C, Pull, Count +1);
+% N = total number of nodes in the network
+main(N, H, S, C, Pull) ->
     
-    Count =:= 10 -> % recovery phase
-        [Peer|T] =  List_node, %select_peer_random(List_node),
+    Linked_list = create_list_node(N),
+    {First, Second} = lists:split(floor(0.4*N), Linked_list),
+    List_id_node = node_initialisation(First, H, S, C, Pull),
+    compteur(List_id_node, N, H, S, C, Pull, Second).
+
+compteur(List_id_node, N, H, S, C, Pull, Second) -> compteur(List_id_node, N, H, S, C, Pull, 0, Second).
+
+compteur(List_id_node, N, H, S, C, Pull, Count, Second) ->
+    timer:sleep(3000),
+    if (Count=:=30) or (Count=:=60) ->
+        {Node_to_add, Node_not_to_add} = lists:split(floor(0.2*N), Second),
+        List_id_node_new = node_initialisation(Node_to_add, H, S, C, Pull),
+        compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, Node_not_to_add);
+
+    Count =:= 90 ->
+        List_id_node_new = node_initialisation(Second, H, S, C, Pull),
+        compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, []);
+
+    Count =:= 120 -> % when kill node
+        List_alive = node_to_kill(List_id_node, floor(0.6*N)),
+        %io:format("List node: ~p~n", [List_id_node]),
+        %io:format("List alive: ~p~n", [List_alive]),
+        compteur(List_alive, N, H, S, C, Pull, Count +1, Second);
+    
+    Count =:= 150 -> % recovery phase
+        Peer = select_peer_random(List_id_node),
         io:format("Peer recovery: ~p~n", [Peer]),
         Peer ! #{message => "ask_id_receiver", addresse_retour => self()},
         receive 
@@ -29,14 +39,13 @@ compteur(List_node, N, H, S, C, Pull, Count) ->
         end,
         View = [#{id_neighbors => Id_receiver, age_neighbors => 0}],
         io:format("View recovery: ~p~n", [View]),
-        List_recovery = create_list_recovery(N, 5, View),
+        List_recovery = create_list_recovery(N, floor(0.6*floor(0.6*N)), View),
         List_address_recovery = node_initialisation(List_recovery, H, S, C, Pull),
-        compteur(lists:append(List_node, List_address_recovery), N, H, S, C, Pull, Count+1);
+        compteur(lists:append(List_id_node, List_address_recovery), N, H, S, C, Pull, Count+1, Second);
         
     true ->
-        timer:sleep(1000),
-        broadcast_timeout(List_node),
-        compteur(List_node, N, H, S, C, Pull, Count + 1)
+        broadcast_timeout(List_id_node),
+        compteur(List_id_node, N, H, S, C, Pull, Count + 1, Second)
     end.
 
 
