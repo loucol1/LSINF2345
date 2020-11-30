@@ -19,6 +19,12 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second) ->
         List_id_node_new = node_initialisation(Node_to_add, H, S, C, Pull),
         compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, Node_not_to_add);
 
+    (Count rem 20) =:= 0 ->
+        io:format("Count = ~p~n", [Count]),
+        List_view = broadcast_ask_view(List_id_node),
+         io:format("List view  = ~p~n", [List_view]),
+         compteur(List_id_node, N, H, S, C, Pull, Count+1, Second);
+
     Count =:= 90 ->
         io:format("Count = ~p~n", [Count]),
         List_id_node_new = node_initialisation(Second, H, S, C, Pull),
@@ -77,3 +83,11 @@ node_to_kill(List, Number) ->
     To_kill = select_peer_random(List),
     To_kill ! #{message => "dead"},
     node_to_kill(lists:delete(To_kill, List), Number - 1).
+
+broadcast_ask_view(List_id_node) -> broadcast_ask_view(List_id_node, []).
+broadcast_ask_view([], Acc) -> Acc;
+broadcast_ask_view([U|T], Acc) ->
+    U ! #{message => "ask_view", addresse_retour => self()},
+    receive
+        View -> broadcast_ask_view(T, [View|Acc])
+    end.

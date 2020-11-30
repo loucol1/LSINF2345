@@ -107,6 +107,9 @@ node(View, IDsender,IDreceiver, H, S, C)->
       getId(IDreceiver)! "dead";
     #{message := "ask_id_receiver", addresse_retour := Addr} ->
       Addr ! #{message => "response_id_receiver", id_receiver => IDreceiver},
+      node(View, IDsender,IDreceiver, H, S, C);
+    #{message := "ask_view", addresse_retour := Addresse_retour} ->
+      Addresse_retour ! View,
       node(View, IDsender,IDreceiver, H, S, C)
   end.
 
