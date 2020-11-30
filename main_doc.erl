@@ -1,5 +1,5 @@
 -module(main_doc).
--export([main/5]).
+-export([main/5, indegree/2, indegree_element/2]).
 -import(linkedlist, [create_list_node/1, node_initialisation/5, getId/1, select_peer_random/1, node_create/6]).
 
 % N = total number of nodes in the network
@@ -95,11 +95,21 @@ broadcast_ask_view([U|T], Acc) ->
         View -> broadcast_ask_view(T, [View|Acc])
     end.
 
+
+
+
 % return a list with the indegree of every node
-indegree(List_view, Id_max) -> indegree(List_view, Id_max, []).
-indegree(List_view, 0, Acc) -> Acc,
-indegree([], Id_max, Acc) ->
+indegree(List_view, Id_max) -> indegree(List_view, List_view, Id_max,0, []).
+indegree(List_parcours, List_view, 0, Acc_in, Acc_out) -> Acc_out;
+indegree([], List_view, Id_max, Acc_in, Acc_out) -> indegree(List_view,List_view, Id_max-1, 0, [Acc_in|Acc_out]);
+indegree([H|T], List_view, Id_max, Acc_in, Acc_out)-> indegree(T, List_view, Id_max, Acc_in+indegree_element(H,Id_max), Acc_out).
 
 
 
-indegree_element(View)
+indegree_element(View, ID_to_check)-> indegree_element(View, ID_to_check,0).
+indegree_element([],ID_to_check,Nbr)->Nbr;
+indegree_element([#{id_neighbors := ID_neighbors, age_neighbors := Age}|T], ID_to_check, Nbr)->
+  if(ID_neighbors =:= ID_to_check)->
+    indegree_element(T,ID_to_check, Nbr+1);
+  true-> indegree_element(T,ID_to_check,Nbr)
+end.
