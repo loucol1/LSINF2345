@@ -24,6 +24,8 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max) ->
     (Count rem 20) =:= 0 -> % indegree computation phase
         io:format("Count = ~p~n", [Count]),
         List_view = broadcast_ask_view(List_id_node),
+        Indegree_return = indegree(List_view, Id_max),
+        Average = lists:sum(Indegree_return)/length(Indegree_return),
 
          io:format("List view  = ~p~n", [List_view]),
          compteur(List_id_node, N, H, S, C, Pull, Count+1, Second, Id_max);
@@ -113,3 +115,7 @@ indegree_element([#{id_neighbors := ID_neighbors, age_neighbors := Age}|T], ID_t
     indegree_element(T,ID_to_check, Nbr+1);
   true-> indegree_element(T,ID_to_check,Nbr)
 end.
+
+sum_of_square(List, Mean)->sum_of_square(List,Mean,0).
+sum_of_square([],Mean,Acc)->Acc;
+sum_of_square([H|T],Mean, Acc)-> sum_of_square(T, Mean, Acc+(H-Mean)*(H-Mean)).
