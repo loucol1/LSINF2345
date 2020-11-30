@@ -15,6 +15,7 @@ getNeighbors(IDNode,[])-> "error, IDNode is not in the given list";
 getNeighbors(IDNode, [#{id := IDNode,list_neighbors:= List_neigh}|T])-> List_neigh;
 getNeighbors(IDNode, [H|T])->getNeighbors(IDNode, T).
 
+
 receiver(View, IDParent, Id_receiver, H, S, C, Pull)->
   receive
     "dead" ->
