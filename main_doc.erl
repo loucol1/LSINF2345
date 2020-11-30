@@ -3,6 +3,7 @@
 -import(linkedlist, [create_list_node/1, node_initialisation/5, getId/1, select_peer_random/1, node_create/6]).
 
 % N = total number of nodes in the network
+% Id_max = valeur maximale de l'id déjà créé, utile pour le calcul de indegree
 main(N, H, S, C, Pull) ->
 
     Linked_list = create_list_node(N),
@@ -10,31 +11,32 @@ main(N, H, S, C, Pull) ->
     List_id_node = node_initialisation(First, H, S, C, Pull),
     compteur(List_id_node, N, H, S, C, Pull, Second).
 
-compteur(List_id_node, N, H, S, C, Pull, Second) -> compteur(List_id_node, N, H, S, C, Pull, 0, Second).
+compteur(List_id_node, N, H, S, C, Pull, Second) -> compteur(List_id_node, N, H, S, C, Pull, 0, Second, length(List_id_node)).
 
-compteur(List_id_node, N, H, S, C, Pull, Count, Second) ->
+compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max) ->
     timer:sleep(1000),
-    if (Count=:=30) or (Count=:=60) ->
+    if (Count=:=30) or (Count=:=60) -> % growing phase
         io:format("Count = ~p~n", [Count]),
         {Node_to_add, Node_not_to_add} = lists:split(floor(0.2*N), Second),
         List_id_node_new = node_initialisation(Node_to_add, H, S, C, Pull),
-        compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, Node_not_to_add);
+        compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, Node_not_to_add, Id_max+length(List_id_node_new));
 
-    (Count rem 20) =:= 0 ->
+    (Count rem 20) =:= 0 -> % indegree computation phase
         io:format("Count = ~p~n", [Count]),
         List_view = broadcast_ask_view(List_id_node),
-         io:format("List view  = ~p~n", [List_view]),
-         compteur(List_id_node, N, H, S, C, Pull, Count+1, Second);
 
-    Count =:= 90 ->
+         io:format("List view  = ~p~n", [List_view]),
+         compteur(List_id_node, N, H, S, C, Pull, Count+1, Second, Id_max);
+
+    Count =:= 90 -> % growing phase
         io:format("Count = ~p~n", [Count]),
         List_id_node_new = node_initialisation(Second, H, S, C, Pull),
-        compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, []);
+        compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, [], N);
 
-    Count =:= 120 -> % when kill node
+    Count =:= 120 -> % kill node phase
         io:format("Count = ~p~n", [Count]),
         List_alive = node_to_kill(List_id_node, floor(0.6*N)),
-        compteur(List_alive, N, H, S, C, Pull, Count +1, Second);
+        compteur(List_alive, N, H, S, C, Pull, Count +1, Second, Id_max);
 
     Count =:= 150 -> % recovery phase
         io:format("Count = ~p~n", [Count]),
@@ -50,7 +52,7 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second) ->
         io:format("View recovery: ~p~n", [View]),
         List_recovery = create_list_recovery(N, floor(0.6*floor(0.6*N)), View),
         List_address_recovery = node_initialisation(List_recovery, H, S, C, Pull),
-        compteur(lists:append(List_id_node, List_address_recovery), N, H, S, C, Pull, Count+1, Second);
+        compteur(lists:append(List_id_node, List_address_recovery), N, H, S, C, Pull, Count+1, Second, Id_max);
 
     Count =:= 180 -> % end of the scenario
         io:format("Count = ~p~n", [Count]),
@@ -59,7 +61,7 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second) ->
 
     true ->
         broadcast_timeout(List_id_node),
-        compteur(List_id_node, N, H, S, C, Pull, Count + 1, Second)
+        compteur(List_id_node, N, H, S, C, Pull, Count + 1, Second, Id_max)
     end.
 
 
@@ -92,3 +94,12 @@ broadcast_ask_view([U|T], Acc) ->
     receive
         View -> broadcast_ask_view(T, [View|Acc])
     end.
+
+% return a list with the indegree of every node
+indegree(List_view, Id_max) -> indegree(List_view, Id_max, []).
+indegree(List_view, 0, Acc) -> Acc,
+indegree([], Id_max, Acc) ->
+
+
+
+indegree_element(View)

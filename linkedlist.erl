@@ -124,7 +124,7 @@ node_create(IDreceiver, View, H, S, C, Pull)->
 
 
 create_list_node(NbrNode)->create_list_node(NbrNode,[]).
-create_list_node(0,Acc)->lists:reverse(Acc);
+create_list_node(0,Acc)->Acc;
 create_list_node(NbrNode,List)-> create_list_node(NbrNode-1, add(NbrNode, List)).
 
 % A is a list of node (output of create_list_node)
