@@ -26,6 +26,8 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max) ->
         List_view = broadcast_ask_view(List_id_node),
         Indegree_return = indegree(List_view, Id_max),
         Average = lists:sum(Indegree_return)/length(Indegree_return),
+        STD = math:sqrt(sum_of_square(Indegree_return, Average)/length(Indegree_return)),
+        
 
          io:format("List view  = ~p~n", [List_view]),
          compteur(List_id_node, N, H, S, C, Pull, Count+1, Second, Id_max);
