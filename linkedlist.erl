@@ -70,13 +70,13 @@ sender(IDParent,IDReceiver_itself, H, S, C, Pull)->
                 IDParent ! #{message => "view_sender", view => View_increase_Age}
 
               end; %receive
-            true-> % if Pull =:='true'
-              View_increase_Age = increaseAge(View_permute),
-              IDParent ! #{message => "view_sender", view => View_increase_Age}
-            end, % if Pull =:='true'
-            sender(IDParent,IDReceiver_itself, H, S, C, Pull);
-       false-> %   case whereis(ToTest) =/= undefined of true ->
-         sender(IDParent,IDReceiver_itself, H, S, C, Pull)
+        true-> % if Pull =:='true'
+          View_increase_Age = increaseAge(View_permute),
+          IDParent ! #{message => "view_sender", view => View_increase_Age}
+        end, % if Pull =:='true'
+        sender(IDParent,IDReceiver_itself, H, S, C, Pull);
+      false-> %   case whereis(ToTest) =/= undefined of true ->
+        sender(IDParent,IDReceiver_itself, H, S, C, Pull)
       end %   if whereis(getId(Id_Peer)) =/= undefined
   end.
 

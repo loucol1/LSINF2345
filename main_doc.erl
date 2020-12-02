@@ -5,42 +5,44 @@
 % N = total number of nodes in the network
 % Id_max = valeur maximale de l'id déjà créé, utile pour le calcul de indegree
 main(N, H, S, C, Pull) ->
-
+    {ok, Output} = file:open("swapper_true.txt", [write]),
     Linked_list = create_list_node(N),
     {First, Second} = lists:split(floor(0.4*N), Linked_list),
     List_id_node = node_initialisation(First, H, S, C, Pull),
-    compteur(List_id_node, N, H, S, C, Pull, Second).
+    compteur(List_id_node, N, H, S, C, Pull, Second, Output).
 
-compteur(List_id_node, N, H, S, C, Pull, Second) -> compteur(List_id_node, N, H, S, C, Pull, 0, Second, length(List_id_node)).
+compteur(List_id_node, N, H, S, C, Pull, Second, Output) -> compteur(List_id_node, N, H, S, C, Pull, 0, Second, length(List_id_node), Output).
 
-compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max) ->
-    timer:sleep(1000),
-    if (Count=:=30) or (Count=:=60) -> % growing phase
-        io:format("Count = ~p~n", [Count]),
-        {Node_to_add, Node_not_to_add} = lists:split(floor(0.2*N), Second),
-        List_id_node_new = node_initialisation(Node_to_add, H, S, C, Pull),
-        compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, Node_not_to_add, Id_max+length(List_id_node_new));
-
-    (Count rem 20) =:= 0 -> % indegree computation phase
+compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max, Output) ->
+    timer:sleep(3000),
+    if    (Count rem 20) =:= 0 -> % indegree computation phase
         io:format("Count = ~p~n", [Count]),
         List_view = broadcast_ask_view(List_id_node),
         Indegree_return = indegree(List_view, Id_max),
         Average = lists:sum(Indegree_return)/length(Indegree_return),
         STD = math:sqrt(sum_of_square(Indegree_return, Average)/length(Indegree_return)),
+        io:format(Output, "~p ~p ~p ~n",[Count, Average, STD]);
+        %io:format(Output, "~p ~n",[Indegree_return]);
         
+    true ->
+        0
+    end,
 
-         io:format("List view  = ~p~n", [List_view]),
-         compteur(List_id_node, N, H, S, C, Pull, Count+1, Second, Id_max);
+    if (Count=:=30) or (Count=:=60) -> % growing phase
+        io:format("Count = ~p~n", [Count]),
+        {Node_to_add, Node_not_to_add} = lists:split(floor(0.2*N), Second),
+        List_id_node_new = node_initialisation(Node_to_add, H, S, C, Pull),
+        compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, Node_not_to_add, Id_max+length(List_id_node_new), Output);
 
     Count =:= 90 -> % growing phase
         io:format("Count = ~p~n", [Count]),
         List_id_node_new = node_initialisation(Second, H, S, C, Pull),
-        compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, [], N);
+        compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, [], N, Output);
 
     Count =:= 120 -> % kill node phase
         io:format("Count = ~p~n", [Count]),
         List_alive = node_to_kill(List_id_node, floor(0.6*N)),
-        compteur(List_alive, N, H, S, C, Pull, Count +1, Second, Id_max);
+        compteur(List_alive, N, H, S, C, Pull, Count +1, Second, Id_max, Output);
 
     Count =:= 150 -> % recovery phase
         io:format("Count = ~p~n", [Count]),
@@ -56,16 +58,16 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max) ->
         io:format("View recovery: ~p~n", [View]),
         List_recovery = create_list_recovery(N, floor(0.6*floor(0.6*N)), View),
         List_address_recovery = node_initialisation(List_recovery, H, S, C, Pull),
-        compteur(lists:append(List_id_node, List_address_recovery), N, H, S, C, Pull, Count+1, Second, Id_max);
+        compteur(lists:append(List_id_node, List_address_recovery), N, H, S, C, Pull, Count+1, Second, Id_max, Output);
 
     Count =:= 180 -> % end of the scenario
         io:format("Count = ~p~n", [Count]),
         List_alive_end = node_to_kill(List_id_node, length(List_id_node)),
-        io:format("End List alive end = ~p~n", [List_alive_end]);
-
+        io:format("End List alive end = ~p~n", [List_alive_end]),
+        file:close(Output);
     true ->
         broadcast_timeout(List_id_node),
-        compteur(List_id_node, N, H, S, C, Pull, Count + 1, Second, Id_max)
+        compteur(List_id_node, N, H, S, C, Pull, Count + 1, Second, Id_max, Output)
     end.
 
 
