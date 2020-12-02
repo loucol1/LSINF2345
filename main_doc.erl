@@ -5,7 +5,8 @@
 % N = total number of nodes in the network
 % Id_max = valeur maximale de l'id déjà créé, utile pour le calcul de indegree
 main(N, H, S, C, Pull) ->
-    {ok, Output} = file:open("swapper_true.txt", [write]),
+    {ok, Output} = file:open("swapper.txt", [write]),
+    %{ok, Graph} = file:open("graph.txt", [write]),    
     Linked_list = create_list_node(N),
     {First, Second} = lists:split(floor(0.4*N), Linked_list),
     List_id_node = node_initialisation(First, H, S, C, Pull),
@@ -14,12 +15,19 @@ main(N, H, S, C, Pull) ->
 compteur(List_id_node, N, H, S, C, Pull, Second, Output) -> compteur(List_id_node, N, H, S, C, Pull, 0, Second, length(List_id_node), Output).
 
 compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max, Output) ->
-    timer:sleep(3000),
-    if    (Count rem 20) =:= 0 -> % indegree computation phase
+    timer:sleep(1000),
+    if  (Count rem 20) =:= 0 -> % indegree computation phase
         io:format("Count = ~p~n", [Count]),
-        List_view = broadcast_ask_view(List_id_node),
+        List_tuple = broadcast_ask_view(List_id_node),
+
+        io:format(Output, "~p ~n",[Count]),
+        print_graph(List_tuple),
+        file:write_file("graph2.txt", io_lib:fwrite("~w ~w~n",[-1,-1]),[append]),
+
+
+        List_view = return_listView(List_tuple),
         Indegree_return = indegree(List_view, Id_max),
-        Average = lists:sum(Indegree_return)/length(Indegree_return),
+        Average = lists:sum(Indegree_return)/length(List_id_node),
         STD = math:sqrt(sum_of_square(Indegree_return, Average)/length(Indegree_return)),
         io:format(Output, "~p ~p ~p ~n",[Count, Average, STD]);
         %io:format(Output, "~p ~n",[Indegree_return]);
@@ -58,13 +66,15 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max, Output) ->
         io:format("View recovery: ~p~n", [View]),
         List_recovery = create_list_recovery(N, floor(0.6*floor(0.6*N)), View),
         List_address_recovery = node_initialisation(List_recovery, H, S, C, Pull),
-        compteur(lists:append(List_id_node, List_address_recovery), N, H, S, C, Pull, Count+1, Second, Id_max, Output);
+        compteur(lists:append(List_id_node, List_address_recovery), N, H, S, C, Pull, Count+1, Second, Id_max+floor(0.6*floor(0.6*N)), Output);
 
     Count =:= 180 -> % end of the scenario
         io:format("Count = ~p~n", [Count]),
         List_alive_end = node_to_kill(List_id_node, length(List_id_node)),
         io:format("End List alive end = ~p~n", [List_alive_end]),
         file:close(Output);
+        %file:close(Graph);
+
     true ->
         broadcast_timeout(List_id_node),
         compteur(List_id_node, N, H, S, C, Pull, Count + 1, Second, Id_max, Output)
@@ -98,9 +108,29 @@ broadcast_ask_view([], Acc) -> Acc;
 broadcast_ask_view([U|T], Acc) ->
     U ! #{message => "ask_view", addresse_retour => self()},
     receive
-        View -> broadcast_ask_view(T, [View|Acc])
+        Tuple_id_view -> broadcast_ask_view(T, [Tuple_id_view|Acc])
     end.
 
+%Tuple_id_view est une liste de tuple #{view=xxx, id=xxx}
+return_listView(Tuple_id_view) -> return_listView(Tuple_id_view, []).
+return_listView([], Acc) -> Acc;
+return_listView([#{view:= View, id:=ID}|T], Acc) -> 
+    return_listView(T, [View|Acc]).
+
+%Ecrit dans File l'ID de chaque noeud et la view de ce noeud.
+% id [id_nei1 id_nei2 id_nei3 ...]
+print_graph([]) -> 0;
+print_graph([#{view:=View, id:=ID}|T]) ->
+    List = view_to_list(View),
+    file:write_file("graph2.txt", io_lib:fwrite("~w ~w~n",[ID,List]),[append]),
+    print_graph(T).
+
+%View est une liste de tuple #{age_neighbors=xxx, id_neighbors=xxx}
+%la fonction retourne une liste avec les id_neighbors de la View
+view_to_list(View) -> view_to_list(View, []).
+view_to_list([], Acc) -> Acc;
+view_to_list([#{age_neighbors:=A, id_neighbors:=ID}|T], Acc) ->
+    view_to_list(T, [ID|Acc]).
 
 
 

@@ -46,7 +46,7 @@ sender(IDParent,IDReceiver_itself, H, S, C, Pull)->
       0;
 
     View-> % le sender va devoir envoyer un message a un autre node. Pour le moment, il l'envoie au premier noeud de la list
-      #{id_neighbors := Id_Peer, age_neighbors := Age} = select_peer_random(View),
+      #{id_neighbors := Id_Peer, age_neighbors := Age} = select_peer_random_alive(View),
       % if push
 
       Buffer = [#{id_neighbors=>IDReceiver_itself, age_neighbors=>0}],
@@ -110,7 +110,7 @@ node(View, IDsender,IDreceiver, H, S, C)->
       Addr ! #{message => "response_id_receiver", id_receiver => IDreceiver},
       node(View, IDsender,IDreceiver, H, S, C);
     #{message := "ask_view", addresse_retour := Addresse_retour} ->
-      Addresse_retour ! View,
+      Addresse_retour ! #{view => View, id => IDreceiver},
       node(View, IDsender,IDreceiver, H, S, C)
   end.
 
@@ -153,8 +153,20 @@ getHighestAge([#{id_neighbors := ID, age_neighbors := Nbr}|T], #{id_neighbors :=
 end.
 
 
-select_peer_random(View) ->
-    lists:nth(rand:uniform(length(View)), View).
+select_peer_random_alive(View) ->
+  case View =:= [] of true -> io:format("OKKKKKK ~p~n", [whereis(getId(-1))]),
+    #{id_neighbors => -1, age_neighbors => 0};
+  false ->
+    #{id_neighbors := Id_Peer, age_neighbors := Age} = lists:nth(rand:uniform(length(View)), View),
+    ToTest = getId(Id_Peer),
+    case whereis(ToTest) =/= undefined of true -> #{id_neighbors => Id_Peer, age_neighbors => Age};
+    false ->
+    select_peer_random_alive(lists:delete(#{id_neighbors => Id_Peer, age_neighbors => Age},View))
+  end
+end.
+
+select_peer_random(View)->
+  lists:nth(rand:uniform(length(View)), View).
 
 
 
