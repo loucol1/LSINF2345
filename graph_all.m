@@ -11,7 +11,7 @@
 %% Initialize variables.
 clear;
 close all;
-filename = 'C:\Users\Sacha\OneDrive - UCL\EPL\Master\Q9\LSINF2345\PROJECT\Project-Git\LSINF2345\graph2.txt';
+filename = 'C:\Users\Sacha\OneDrive - UCL\EPL\Master\Q9\LSINF2345\PROJECT\Project-Git\LSINF2345\graph_swapper.txt';
 delimiter = {',',' ',']','['};
 
 %% Format for each line of text:

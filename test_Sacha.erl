@@ -1,8 +1,9 @@
 -module(test_Sacha).
 
 -import(linkedlist, [getHighestAge/1]).
+-import(main_doc, [indegree/2]).
 
--export([test/1, select_peer_random/1, test_highest_age_to_end/0, test_remove_highest_age/0, test_remove_first_element/0, test_remove/0]).
+-export([test/1, select_peer_random/1, test_highest_age_to_end/0, test_remove_highest_age/0, test_remove_first_element/0, test_remove/0, test_indegree/0]).
 
 test(A) ->
     timer:sleep(10000),
@@ -56,3 +57,14 @@ remove_random (View, N) ->
 test_remove() ->
   List_test =  [#{age_neighbors => 2,id_neighbors => 3}, #{age_neighbors => 5,id_neighbors => 5},#{age_neighbors => 1,id_neighbors => 5}],
   remove_random(List_test, 1).
+
+
+test_indegree() ->
+  View1 = [#{id_neighbors => 2, age_neighbors =>0}, #{id_neighbors => 3, age_neighbors =>0}, #{id_neighbors => 4, age_neighbors =>0}],
+  View2 = [#{id_neighbors => 0, age_neighbors =>0}, #{id_neighbors => 3, age_neighbors =>0}, #{id_neighbors => 4, age_neighbors =>0}, #{id_neighbors => 5, age_neighbors =>0}],
+  View3 = [#{id_neighbors => 2, age_neighbors =>0}, #{id_neighbors => 1, age_neighbors =>0}, #{id_neighbors => 4, age_neighbors =>0}, #{id_neighbors => 5, age_neighbors =>0}],
+  View4 = [#{id_neighbors => 2, age_neighbors =>0}, #{id_neighbors => 2, age_neighbors =>0}, #{id_neighbors => 1, age_neighbors =>0}, #{id_neighbors => 5, age_neighbors =>0}],
+  View5 = [#{id_neighbors => 2, age_neighbors =>0}, #{id_neighbors => 3, age_neighbors =>0}, #{id_neighbors => 4, age_neighbors =>0}, #{id_neighbors => 1, age_neighbors =>0}],
+  List_view = [View1, View2, View3, View4, View5],
+  List_id = [1,2,3],
+  indegree(List_view, List_id).
