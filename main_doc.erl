@@ -9,22 +9,22 @@
 % output: Write in a file boxplot.txt the data to plot the boxplot. Format : Count Indegree_average Standard_deviation
 %         Write in a file output.txt the data relative to the network. Format: Count NodeId [View]
 main(N, H, S, C, Pull) ->
-    {ok, Output} = file:open("boxplot.txt", [write]), 
-    Linked_list = create_list_node(N), 
+    {ok, Output} = file:open("boxplot.txt", [write]),
+    Linked_list = create_list_node(N),
     {First, Second} = lists:split(floor(0.4*N), Linked_list),
     List_id_node = node_initialisation(First, H, S, C, Pull),
     compteur(List_id_node, N, H, S, C, Pull, Second, Output).
 
 
 
-%This function manage the scenario. By using the clock (timer:sleep) this function manage the clock cycle.
-%This function interact with the nodes by sending messages when an event happens : end of a cycle, the death of a node...
-%input: List_id_node, a list with the address of the node threads of form [<add1>, <add2>...]
-%       Second, a linkedlist of the form [#{id=xx, list_neighbors=xxx}...] with the node that are not yet added to the network
-%       Output, the identification of the file to write the boxplot data.
+%This function manages the scenario. By using the clock (timer:sleep) this function manages the clock cycle.
+%This function interacts with the nodes by sending messages when an event happens : end of a cycle, the death of a node...
+%input: List_id_node; a list with the address of the node threads of form [<add1>, <add2>...]
+%       Second; a linkedlist of the form [#{id=xx, list_neighbors=xxx}...] with the node that are not yet added to the network
+%       Output; the identification of the file to write the boxplot data.
 compteur(List_id_node, N, H, S, C, Pull, Second, Output) -> compteur(List_id_node, N, H, S, C, Pull, 0, Second, length(List_id_node), Output).
 
-compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max, Output) -> 
+compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max, Output) ->
     timer:sleep(3000), %wait the duration of a clock cycle
 
     if (Count=:=30) or (Count=:=60) -> % growing phase - add 20% of the nodes
@@ -36,7 +36,7 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max, Output) ->
           List_tuple = broadcast_ask_view(lists:append(List_id_node, List_id_node_new)),
           print_graph(List_tuple, Count), %print network data in output.txt
           List_view = return_listView(List_tuple),
-          List_id_alive = list_id_alive(List_tuple), %recover the id of the alive node 
+          List_id_alive = list_id_alive(List_tuple), %recover the id of the alive nodes
           Indegree_return = indegree(List_view, List_id_alive), %compute the indegree with the alive node
           Average = lists:sum(Indegree_return)/length(Indegree_return), %compute the average indegree
           STD = math:sqrt(sum_of_square(Indegree_return, Average)/length(Indegree_return)), %compute the standard deviation of the indegree
@@ -51,7 +51,7 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max, Output) ->
     Count =:= 90 -> % growing phase - last growing phase, add all the element of Second
         io:format("Count = ~p~n", [Count]),
         List_id_node_new = node_initialisation(Second, H, S, C, Pull), %add the new node in the network
-        broadcast_timeout(lists:append(List_id_node, List_id_node_new)), %send a message to all the node because it is the end of a clockk cycle
+        broadcast_timeout(lists:append(List_id_node, List_id_node_new)), %send a message to all the nodes because it is the end of a clock cycle
         compteur(lists:append(List_id_node, List_id_node_new), N, H, S, C, Pull, Count+1, [], N, Output);
 
     Count =:= 120 -> % kill node phase
@@ -82,17 +82,17 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max, Output) ->
         io:format("View recovery: ~p~n", [View]),
         List_recovery = create_list_recovery(N, floor(0.6*floor(0.6*N)), View), % recover 60% of the node
         List_address_recovery = node_initialisation(List_recovery, H, S, C, Pull),
-        broadcast_timeout(lists:append(List_id_node, List_address_recovery)), %send a message to all the node because it is the end of the clock cycle
+        broadcast_timeout(lists:append(List_id_node, List_address_recovery)), %send a message to all the nodes because it is the end of the clock cycle
         compteur(lists:append(List_id_node, List_address_recovery), N, H, S, C, Pull, Count+1, Second, Id_max+floor(0.6*floor(0.6*N)), Output);
 
-    Count =:= 180 -> % end of the scenario - all the thread have to stop
+    Count =:= 180 -> % end of the scenario - all the threads have to stop
         io:format("Count = ~p~n", [Count]),
-        List_tuple = broadcast_ask_view(List_id_node), 
+        List_tuple = broadcast_ask_view(List_id_node),
         print_graph(List_tuple, Count), %write network information in output.txt
 
         List_view = return_listView(List_tuple),
         List_id_alive = list_id_alive(List_tuple), %recover the list of alive nodes
-        Indegree_return = indegree(List_view, List_id_alive), %compute the indegree of the alive nodes 
+        Indegree_return = indegree(List_view, List_id_alive), %compute the indegree of the alive nodes
         Average = lists:sum(Indegree_return)/length(Indegree_return), %compute the average indegree
         STD = math:sqrt(sum_of_square(Indegree_return, Average)/length(Indegree_return)), %compute the standard deviation of the indegree
         io:format(Output, "~p ~p ~p ~n",[Count, Average, STD]), %write the indegree information in boxplot.txt
@@ -119,10 +119,10 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max, Output) ->
     end.
 
 
-%create a list with new nodes for the recovery phase
-%input: N, the number of node already present in the network (with the dead nodes)
-%       Nbr_to_recover, the number of node to add in the network
-%       View, the view that all the recovery nodes will have. Of form [#{id_neigbors=x, age_neigbors=y}, ...]
+%creates a list with new nodes for the recovery phase
+%input: N; the number of nodes already present in the network (with the dead nodes)
+%       Nbr_to_recover; the number of nodes to add in the network
+%       View; the view that all the recovery nodes will have. Of form [#{id_neigbors=x, age_neigbors=y}, ...]
 %output: a list with all the recovery node of form [#{id = a, list_neighbors = b}, ...]
 
 create_list_recovery(N, Nbr_to_recover, View) -> create_list_recovery(N, Nbr_to_recover, View, []).
@@ -132,7 +132,7 @@ create_list_recovery(N, Nbr_to_recover, View, Acc) ->
 
 
 
-%Send a message time to all the node thread
+%Sends a message time to all the node thread
 %This function is used to indicate to all the nodes that it is the end of a clock cycle
 broadcast_timeout([]) -> 0;
 broadcast_timeout([U|T]) ->
@@ -140,10 +140,10 @@ broadcast_timeout([U|T]) ->
     broadcast_timeout(T).
 
 
-% return a list of the alive nodes
-% send a message kill to the node
-%input: List, a list of form [#{id = a, list_neighbors = b}, ...]
-%       Number, the number of node to kill in List
+% Returns a list of the alive nodes
+% send a message "dead" to the node
+%input: List; a list of form [#{id = a, list_neighbors = b}, ...]
+%       Number; the number of nodes to kill in List
 %output: A list where N node have been killed
 node_to_kill(List, 0) -> List;
 node_to_kill(List, Number) ->
@@ -151,9 +151,9 @@ node_to_kill(List, Number) ->
     To_kill ! #{message => "dead"},
     node_to_kill(lists:delete(To_kill, List), Number - 1).
 
-%send a message to all the node to ask the view of the node
-%input: List_id_node, the list id of all the node of form [<add1>, <add2>...]
-%output: A list with the view of all the node of form [#{id = a, list_neighbors = b}, ...]
+%sends a message to all the nodes to ask the view of the nodes
+%input: List_id_node; the list id of all the nodes of form [<add1>, <add2>...]
+%output: A list with the view of all the nodes of form [#{id = a, list_neighbors = b}, ...]
 broadcast_ask_view(List_id_node) -> broadcast_ask_view(List_id_node, []).
 broadcast_ask_view([], Acc) -> Acc;
 broadcast_ask_view([U|T], Acc) ->
@@ -162,7 +162,7 @@ broadcast_ask_view([U|T], Acc) ->
         Tuple_id_view -> broadcast_ask_view(T, [Tuple_id_view|Acc])
     end.
 
-%input: Tuple_id_view, a list of form [#{view=xxx, id=xxx}...]
+%input: Tuple_id_view; a list of form [#{view=xxx, id=xxx}...]
 %output: a list with all the view of Tuple_id_view
 return_listView(Tuple_id_view) -> return_listView(Tuple_id_view, []).
 return_listView([], Acc) -> Acc;
@@ -170,9 +170,9 @@ return_listView([#{view:= View, id:=ID}|T], Acc) ->
     return_listView(T, [View|Acc]).
 
 
-% write the information concerning the newtork in output.txt
-% input: List is the list of all the alive node of form [#{view:=View, id:=ID}...]
-%        Count is the number of the clock cycle
+% writes the information concerning the newtork in output.txt
+% input: List; the list of all the alive nodes of form [#{view:=View, id:=ID}...]
+%        Count; the number of the clock cycles
 % output: write in the file output.txt
 print_graph(List, Count) ->
     if Count =:= 0 ->
@@ -194,7 +194,7 @@ print_graph([#{view:=View, id:=ID}|T], Count, Is_first) ->
 
 
 
-%input: View is a list of form #{age_neighbors=xxx, id_neighbors=xxx}
+%input: View; a list of form #{age_neighbors=xxx, id_neighbors=xxx}
 %return a list with all the id of the id_neigbors
 view_to_list(View) -> view_to_list(View, []).
 view_to_list([], Acc) -> Acc;
@@ -202,7 +202,7 @@ view_to_list([#{age_neighbors:=A, id_neighbors:=ID}|T], Acc) ->
     view_to_list(T, [ID|Acc]).
 
 
-% input: ListTuple, a list of form [#{id=xxx, view=xxx}...]
+% input: ListTuple; a list of form [#{id=xxx, view=xxx}...]
 % outpu: A list of the alive id of form [id1, id2, id3....]
 list_id_alive(ListTuple) -> list_id_alive(ListTuple, []).
 list_id_alive([], Acc) -> Acc;
@@ -210,9 +210,9 @@ list_id_alive([#{id:=ID, view:=View}|T], Acc) ->
     list_id_alive(T, [ID|Acc]).
 
 
-%compute the indegree of every node
-%input:List_view, a list of all view of the alive node of form [[{id_neighbors=x, age_neighbors=y}...], ...]
-%       List_id, a list of all the id of the alive nodes of form [id1, id2...]
+%computes the indegree of every node
+%input:List_view; a list of all views of the alive nodes of form [[{id_neighbors=x, age_neighbors=y}...], ...]
+%       List_id; a list of all the id of the alive nodes of form [id1, id2...]
 %output: a list with the indegree of every node
 indegree(List_view, List_id) -> indegree(List_view, List_view, List_id, 0, []).
 indegree(List_parcours, List_view, [], Acc_in, Acc_out) -> Acc_out;

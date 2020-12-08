@@ -4,7 +4,7 @@
 
 
 
-%The add function create a tuple with the ID given in arguement and a list of neighbors that correspond to the node that are neighbors in the linkedlist
+%The add function creates a tuple with the ID given in arguement and a list of neighbors that correspond to the node that are neighbors in the linkedlist
 %input: ID of a node that we want to add int the linkedlist
 %       The linked list of the form [#{id=xx, list_neighbors=xxx}...]
 %output: the linked list with the element #{id=ID, list_neighbors=xxx} added
@@ -14,7 +14,7 @@ add(ID,[ #{id := IDprev, list_neighbors := List_neigh_prev} |T ])->
   [#{id =>ID, list_neighbors => [#{id_neighbors=>IDprev, age_neighbors=>0}]}, #{id => IDprev, list_neighbors => lists:append([#{id_neighbors=>ID,age_neighbors=>0}],List_neigh_prev)  } |T].
 
 
-%The getNeighbors function return the neighbors of a node in the linkedlist
+%The getNeighbors function returns the neighbors of a node in the linkedlist
 %input: IDNode, the id of the node of which we want to know its neighbors
 %       LinkedList, a list of form [#{id=xx, list_neighbors=xxx}...]
 %output: the list of neighbors of IDNode (=numbers) of form [Id1, Id2...]
@@ -23,13 +23,14 @@ getNeighbors(IDNode, [#{id := IDNode,list_neighbors:= List_neigh}|T])-> List_nei
 getNeighbors(IDNode, [H|T])->getNeighbors(IDNode, T).
 
 
+%One of the three threads that constitues a node. (See the report for a complete explaination of it)
 receiver(View, IDParent, Id_receiver, H, S, C, Pull)->
   receive
-    "dead" -> %the node is killed and the receiver thread have to stop
+    "dead" -> %the node is killed and the receiver thread has to stop
       0;
     #{id_sender_brut := IDsender, view := View_receive}-> %receive a view from a peer node
       % if pull
-      if Pull =:= 'true'-> % the node have to response by sharing its internal view
+      if Pull =:= 'true'-> % the node has to answer by sharing its internal view
         Buffer = [#{id_neighbors=>Id_receiver, age_neighbors=>0}],
         View_permute = highest_age_to_end(View, H),
         {First, Second} = lists:split(min(length(View_permute), floor(C/2)-1), View_permute),
@@ -46,31 +47,31 @@ receiver(View, IDParent, Id_receiver, H, S, C, Pull)->
     receiver(New_view, IDParent, Id_receiver, H, S, C, Pull)
   end.
 
-
+%One of the three threads that constitues a node. (See the report for a complete explaination of it)
 sender(IDParent,IDReceiver_itself, H, S, C, Pull)->
   receive
-    "dead" -> %the node is killed and the sender thread have to stop
+    "dead" -> %the node is killed and the sender thread has to stop
       0;
 
-    View-> % the node send a message to a peer node to share its view
+    View-> % the node sends a message to a peer node to share its view
       #{id_neighbors := Id_Peer, age_neighbors := Age} = select_peer_random_alive(View), %select a random node in its view
       Buffer = [#{id_neighbors=>IDReceiver_itself, age_neighbors=>0}],
       View_permute = highest_age_to_end(View, H),
       {First, Second} = lists:split(min(length(View_permute), floor(C/2)-1), View_permute),
       Buffer_append = lists:append(Buffer, First), %generate the buffer to send
-      ToTest = getId(Id_Peer), %generate the address of the receiver node where the buffer have to be sent
+      ToTest = getId(Id_Peer), %generate the address of the receiver node where the buffer has to be sent
       case whereis(ToTest) =/= undefined of true ->
         getId(Id_Peer) ! #{id_sender_brut => self(), view =>  Buffer_append},
 
       % if pull
         if Pull =:='true' ->
-          receive %the node wait a response of the node with wich it share its view
+          receive %the node waits for a response of the node with wich it shares its view
             #{view_pull := View_receive} -> %receive the view of the peer node
               New_View = view_select(H, S, C, View_receive, View_permute),
               View_increase_Age_Pull = increaseAge(New_View),
               IDParent ! #{message => "view_sender", view => View_increase_Age_Pull} %send its new view to the node thread to update its view
 
-              after 1500 ->%not block if the node is killed, not used because we send the view only to an alive node
+              after 1500 ->%not block if the node is killed, (not really used because we send the view only to an alive node)
                 View_increase_Age = increaseAge(View_permute),
                 IDParent ! #{message => "view_sender", view => View_increase_Age}
 
@@ -86,7 +87,7 @@ sender(IDParent,IDReceiver_itself, H, S, C, Pull)->
   end.
 
 
-
+%One of the three threads that constitues a node. (See the report for a complete explaination of it)
 node(View, IDsender,IDreceiver, H, S, C)->
   if IDreceiver =:= 1 ->
     0;
@@ -94,71 +95,71 @@ node(View, IDsender,IDreceiver, H, S, C)->
   end,
 
   receive
-    #{message := "time"}->%message received from the main thread, it is the end of a clock cycle, the sender have to send its view with a peer node
-    IDsender ! View ,  
+    #{message := "time"}->%message received from the main thread, it is the end of a clock cycle, the sender has to send its view to a peer node
+    IDsender ! View ,
     node(View,IDsender,IDreceiver, H, S, C);
     #{message := "get_neighbors"} ->
       node(View,IDsender,IDreceiver, H, S, C);
-    #{message := "view_receiver" , view := New_View}->%message received from the receiver, the view of the node have to be updated
-      node(New_View, IDsender,IDreceiver, H, S, C); 
-    #{message := "view_sender" , view := New_View}->%message received from the sender, the view of the node have to be updated
-      node(New_View, IDsender,IDreceiver, H, S, C); 
-    #{message := "dead"} ->%message received from the main thread, this node is killed and the thread have to stop
+    #{message := "view_receiver" , view := New_View}->%message received from the receiver, the view of the node has to be updated
+      node(New_View, IDsender,IDreceiver, H, S, C);
+    #{message := "view_sender" , view := New_View}->%message received from the sender, the view of the node has to be updated
+      node(New_View, IDsender,IDreceiver, H, S, C);
+    #{message := "dead"} ->%message received from the main thread, this node is killed and the thread has to stop
       IDsender ! "dead",
       getId(IDreceiver)! "dead";
-    #{message := "ask_id_receiver", addresse_retour := Addr} ->%message received from the main thread, the node have to response with its id
+    #{message := "ask_id_receiver", addresse_retour := Addr} ->%message received from the main thread, the node has to response with its id
       Addr ! #{message => "response_id_receiver", id_receiver => IDreceiver},
       node(View, IDsender,IDreceiver, H, S, C);
-    #{message := "ask_view", addresse_retour := Addresse_retour} ->%message received from the main thread, the node have to response with its id and its view
+    #{message := "ask_view", addresse_retour := Addresse_retour} ->%message received from the main thread, the node has to response with its id and its view
       Addresse_retour ! #{view => View, id => IDreceiver},
       node(View, IDsender,IDreceiver, H, S, C)
   end.
 
 
 
-%node_create create the active(sender) and pasive(receiver) thread of a node
-%input: IDreceiver is the address of the passive thread (it correspond to the number of the node in the linkelist)
-%       View is the view of the node of the form [#{id_neighbors=xx, age_neighbors=xx}...]
+%node_create creates the active(sender) and pasive(receiver) thread of a node
+%input: IDreceiver; the address of the passive thread (it corresponds to the number of the node in the linkelist)
+%       View; the view of the node of the form [#{id_neighbors=xx, age_neighbors=xx}...]
 node_create(IDreceiver, View, H, S, C, Pull)->
   register(getId(IDreceiver), spawn(linkedlist, receiver, [View,self(), IDreceiver, H, S, C, Pull])),
   IDsender = spawn(linkedlist, sender, [self(),IDreceiver, H, S, C, Pull]),
   node(View, IDsender,IDreceiver, H, S, C).
 
-%create_list_node create a linked list with NbrNode nodes.
-%input : NbrNode, the number of nodes in the linkedlist
-%output: A list of the form [#{id=xx, list_neighbors=xxx}...]. List neighbors is a list with the id of the neighbors. 
-%           in the case of a double linked list all the node have 2 neighbors except the first.
+%create_list_node creates a linked list with NbrNode nodes.
+%input : NbrNode; the number of nodes in the linkedlist
+%output: A list of the form [#{id=xx, list_neighbors=xxx}...]. List neighbors is a list with the id of the neighbors.
+%           in the case of a double linked list all the nodes have 2 neighbors except the first and the last one.
 create_list_node(NbrNode)->create_list_node(NbrNode,[]).
 create_list_node(0,Acc)->Acc;
 create_list_node(NbrNode,List)-> create_list_node(NbrNode-1, add(NbrNode, List)).
 
 
 
-% node initialisation create one thread per node
-% input: A, the list of node that we want to create of the form [#{id=xx, list_neigbors=xxx} ...]
-% output: a list with the address of the thread of every node.
+% node_initialisation creates one thread per node
+% input: A; the list of nodes that we want to create of the form [#{id=xx, list_neigbors=xxx} ...]
+% output: a list with the address of the receiver thread of every node.
 node_initialisation(A, H, S, C, Pull)->node_initialisation(A, [], H, S, C, Pull).
 node_initialisation([], Acc, H, S, C, Pull)-> Acc;
 node_initialisation([#{id := ID_receiver_itself, list_neighbors := View} |T], Acc, H, S, C, Pull)->
   node_initialisation(T, lists:append([spawn(linkedlist, node_create, [ID_receiver_itself, View, H, S, C, Pull])], Acc), H, S, C, Pull).
 
-%getId transform a integer into an atom.
+%getId transforms a integer into an atom.
 %for example, getId(5) = '5'
 getId(Nbr)->list_to_atom(integer_to_list(Nbr)).
 
 
-%increaseAge increment the age of all the element of a list
+%increaseAge increments the age of all the elements of a list
 %input: View: a list of the form [#{id_neigbors=x, age_neigbors=y}...]
-%output: a list [#{id_neigbors=x, age_neigbors=y}...] where age_neigbors of all the element is increment of 1.
+%output: a list [#{id_neigbors=x, age_neigbors=y}...] where age_neigbors of all the elements is increment by 1.
 increaseAge(View)->increaseAge(View, []).
 increaseAge([], Acc)-> lists:reverse(Acc);
 increaseAge([#{id_neighbors := ID, age_neighbors := Nbr}|T], Acc) -> increaseAge(T, lists:append([#{id_neighbors => ID, age_neighbors => Nbr+1}], Acc)).
 
 
-%getHighestAge give the element with the highest age
-%input : Vieuw, a list of the form [#{id_neigbors=x, age_neigbors=y}...]
+%getHighestAge gives the element with the highest age
+%input : View, a list of the form [#{id_neigbors=x, age_neigbors=y}...]
 % output : the element with the highest age of the form #{id_neigbors=x, age_neigbors=y}
-%             (if 2 elements have the same age in View, the function return the first element in the list)
+%             (if 2 elements have the same age in View, the function returns the first element in the list)
 getHighestAge(View)-> getHighestAge(View, #{id_neighbors=> -1, age_neighbors => -1}).
 getHighestAge([], Acc)-> Acc;
 getHighestAge([#{id_neighbors := ID, age_neighbors := Nbr}|T], #{id_neighbors := IDMax, age_neighbors := NbrMax}) ->
@@ -166,9 +167,9 @@ getHighestAge([#{id_neighbors := ID, age_neighbors := Nbr}|T], #{id_neighbors :=
   true -> getHighestAge(T, #{id_neighbors => IDMax, age_neighbors => NbrMax})
 end.
 
-%select_peer_random select a random element in a list of node with the condition that this element is an alive node
+%select_peer_random selects a random element in a list of node with the condition that this element is an alive node
 %input: View, a list of form [#{id_neighbors = x, age_neighbors = y}...]
-%output: a element of form #{id_neighbors = x, age_neighbors = y} where id_neigbors correspond to the id of an alive node
+%output: an element of form #{id_neighbors = x, age_neighbors = y} where id_neigbors corresponds to the id of an alive node
 select_peer_random_alive(View) ->
   case View =:= [] of true -> io:format("OKKKKKK ~p~n", [whereis(getId(-1))]),
     #{id_neighbors => -1, age_neighbors => 0};
@@ -181,14 +182,14 @@ select_peer_random_alive(View) ->
   end
 end.
 
-%select_peer_random select a random element in a list
+%select_peer_random selects a random element in a list
 %input: View, a list
 %output: a random element of the list
 select_peer_random(View)->
   lists:nth(rand:uniform(length(View)), View).
 
-%min_age return the element with the lowest age
-%input: View a list of form [#{id_neighbors = x, age_neighbors = y}...]
+%min_age returns the element with the lowest age
+%input: View; list of form [#{id_neighbors = x, age_neighbors = y}...]
 %       Element of form #{id_neighbors = a, age_neighbors = b}
 %output: The element in the list View of form #{id_neighbors = a, age_neighbors = b} with le lowest age
 %         and an id_neigbors = a
@@ -199,10 +200,10 @@ true -> min_age(T, #{id_neighbors => ID_min, age_neighbors => Nbr_min})
 end.
 
 
-% remove_older remove all the element that have the same id than the reference element and keep only the element with the lowest age
-%input: Tuple_ref, an element of form #{id_neighbors = x, age_neighbors = y}
-%       View a list of form [#{id_neighbors = a, age_neighbors = b} ...]
-%output: a list of form [#{id_neighbors = a, age_neighbors = b} ...] 
+% remove_older removes all the elements that have the same id than the reference element and keeps only the element with the lowest age
+%input: Tuple_ref; an element of form #{id_neighbors = x, age_neighbors = y}
+%       View; a list of form [#{id_neighbors = a, age_neighbors = b} ...]
+%output: a list of form [#{id_neighbors = a, age_neighbors = b} ...]
 %         where there is at most one element with id_neigbors=x and this element is the one with the lowest age_neigbors
 remove_older(Tuple_ref, View)-> remove_older(Tuple_ref, View, [], 'false').
 remove_older(#{id_neighbors := ID_ref, age_neighbors := Nbr_ref}, [], Acc, Flag )-> lists:reverse(Acc);
@@ -213,10 +214,10 @@ remove_older(#{id_neighbors := ID_ref, age_neighbors := Nbr_ref}, [#{id_neighbor
   true -> remove_older(#{id_neighbors => ID_ref, age_neighbors => Nbr_ref}, T, [#{id_neighbors => ID, age_neighbors => Nbr}|Acc], Flag)
 end.
 
-% remove_duplicate remove all the element that have the same id_neigbors, 
+% remove_duplicate removes all the elements that have the same id_neigbors,
 %   if 2 elements have the same id, the function keeps the element with the lowest age_neigbors
-% input: View, a list of form [#{id_neighbors = a, age_neighbors = b} ...] 
-% output: a list of form [#{id_neighbors = a, age_neighbors = b} ...] without duplicate elements
+% input: View, a list of form [#{id_neighbors = a, age_neighbors = b} ...]
+% output: a list of form [#{id_neighbors = a, age_neighbors = b} ...] without duplicated elements
 remove_duplicate(View) -> remove_duplicate(View, View).
 remove_duplicate([], Acc) -> Acc;
 remove_duplicate([H|T], Acc) -> remove_duplicate(T, remove_older(H, Acc)).
@@ -228,34 +229,34 @@ nbr_to_remove(X, Y)->
   true-> min(X,Y)
 end.
 
-%highest_age_to_end place the H older elements at the end of the list
-%input: View, a list of form [#{id_neighbors = a, age_neighbors = b} ...] 
-%       H the number of element to move at end of the list
-%output: a list of form [#{id_neighbors = a, age_neighbors = b} ...] where the H last element have the highest age_neigbors
+%highest_age_to_end places the H older elements at the end of the list
+%input: View; a list of form [#{id_neighbors = a, age_neighbors = b} ...]
+%       H; the number of elements to move at end of the list
+%output: a list of form [#{id_neighbors = a, age_neighbors = b} ...] where the H last elements have the highest age_neigbors
 highest_age_to_end(View, H) -> highest_age_to_end(View, H, []).
 highest_age_to_end([], H, Acc) -> Acc;
 highest_age_to_end(View, 0, Acc) -> lists:append(View, Acc);
 highest_age_to_end(View, H, Acc) -> highest_age_to_end(lists:delete(getHighestAge(View), View), H-1, [getHighestAge(View)|Acc]).
 
 
-%remove_highest_age remove the H oldest element of the list
-%input: View, a list of size N of form [#{id_neighbors = a, age_neighbors = b} ...] 
-%       H the number of element to delete
-%output: a list of size N-H of form [#{id_neighbors = a, age_neighbors = b} ...] where the H oldest element have been removed
+%remove_highest_age removes the H oldest elements of the list
+%input: View, a list of size N of form [#{id_neighbors = a, age_neighbors = b} ...]
+%       H the number of elements to delete
+%output: a list of size N-H of form [#{id_neighbors = a, age_neighbors = b} ...] where the H oldest elements have been removed
 remove_highest_age(View, 0) -> View;
 remove_highest_age(View, H) ->
   remove_highest_age(lists:delete(getHighestAge(View),View),H-1).
 
-%remove_first_element remove the S first element of the list
+%remove_first_element removes the S first elements of the list
 %input: View, a list of size N
-%output: a list of size N-S where the S first elemnt have been removed
+%output: a list of size N-S where the S first elemnts have been removed
 remove_first_element(View, 0) -> View;
 remove_first_element([H|T], S) -> remove_first_element(T, S-1).
 
 
-%view_select generate the view to send to a peer node
-%input: View_receive, the view receive from a peer node of the form [#{id_neighbors = a, age_neighbors = b} ...] 
-%       View, the internal view of the node of the form [#{id_neighbors = a, age_neighbors = b} ...] 
+%view_select generates the view to send to a peer node
+%input: View_receive; the view received from a peer node of the form [#{id_neighbors = a, age_neighbors = b} ...]
+%       View; the internal view of the node of the form [#{id_neighbors = a, age_neighbors = b} ...]
 %output: a view of form [#{id_neighbors = a, age_neighbors = b} ...] to send to a peer node
 view_select(H, S, C, View_receive, View) ->
   View_append = lists:append(View, View_receive),
@@ -265,10 +266,10 @@ view_select(H, S, C, View_receive, View) ->
   remove_random(View_remove_first, max(0, length(View_remove_first)-C)). %remove random element to have a buffer size of max C
 
 
-%remove_random remove N element randomly in a list
-%input: View, a list of size M
-%       N, the number of element to remove
-%output: of size M where N element have been randomly removed
+%remove_random removes N elements randomly in a list
+%input: View; a list of size M
+%       N; the number of element to remove
+%output: of size M where N elements have been randomly removed
 remove_random (View, 0) ->
   View;
 remove_random (View, N) ->
