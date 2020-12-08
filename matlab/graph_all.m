@@ -11,7 +11,7 @@
 %% Initialize variables.
 clear;
 close all;
-filename = 'C:\Users\Sacha\OneDrive - UCL\EPL\Master\Q9\LSINF2345\PROJECT\Project-Git\LSINF2345\graph_swapper.txt';
+filename = 'C:\Users\Sacha\OneDrive - UCL\EPL\Master\Q9\LSINF2345\PROJECT\Project-Git\LSINF2345\matlab\graph_swapper.txt';
 delimiter = {',',' ',']','['};
 
 %% Format for each line of text:
@@ -73,22 +73,3 @@ for a = 1:10
     figure
     plot(G);
 end
-
-%% 
-a = 8;
-length_vector = 8 - sum(isnan(graph1(index_separation(a)+1,:)));
-G = digraph(graph1(index_separation(a)+1,1), graph1(index_separation(a)+1,[2:length_vector]));
-node1 = graph1(index_separation(a)+1,1)
-edge1 = graph1(index_separation(a)+1,[2:length_vector])
-figure
-plot(G);
-
-    for b = index_separation(a)+2:index_separation(a)+2
-            length_vector = 8 - sum(isnan(graph1(b,:)));
-            node = graph1(b,1)
-            edge = graph1(b,[2:length_vector])
-            G = addedge(G,graph1(b,1), graph1(b,[2:length_vector]));
-    end
-   figure
-   plot(G)
-   

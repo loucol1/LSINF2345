@@ -11,8 +11,8 @@
 %% Initialize variables.
 clear all;
 close all;
-filename_swapper = 'C:\Users\Sacha\OneDrive - UCL\EPL\Master\Q9\LSINF2345\PROJECT\Project-Git\LSINF2345\swapper_true.txt';
-filename_healer = 'C:\Users\Sacha\OneDrive - UCL\EPL\Master\Q9\LSINF2345\PROJECT\Project-Git\LSINF2345\healer_true.txt';
+filename_swapper = 'C:\Users\Sacha\OneDrive - UCL\EPL\Master\Q9\LSINF2345\PROJECT\Project-Git\LSINF2345\matlab\swapper_true.txt';
+filename_healer = 'C:\Users\Sacha\OneDrive - UCL\EPL\Master\Q9\LSINF2345\PROJECT\Project-Git\LSINF2345\matlab\healer_true.txt';
 
 delimiter = ' ';
 
@@ -57,21 +57,6 @@ std_swapper = swapperdeployment(:,3);
 count_healer = healerdeployment(:,1);
 mean_healer = healerdeployment(:,2);
 std_healer = healerdeployment(:,3);
-
-% f1 = figure();
-% errorbar(count_swapper, mean_swapper, std_swapper, 'x');
-% title('Swapper');
-% xlabel('Counter');
-% ylabel('In degree');
-% saveas(f1, 'swapper.png');
-% 
-% 
-% f2 = figure();
-% errorbar(count_healer, mean_healer, std_healer, 'x');
-% title('Healer');
-% xlabel('Counter');
-% ylabel('In degree');
-% saveas(f2, 'healer.png');
 
 f3 = figure();
 errorbar(count_swapper, mean_swapper, std_swapper, 'x');
