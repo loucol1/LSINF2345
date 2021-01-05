@@ -33,7 +33,7 @@ receiver(View, IDParent, Id_receiver, H, S, C, Pull)->
       if Pull =:= 'true'-> % the node has to answer by sharing its internal view
         Buffer = [#{id_neighbors=>Id_receiver, age_neighbors=>0}],
         View_permute = highest_age_to_end(View, H),
-        {First, Second} = lists:split(min(length(View_permute), floor(C/2)-1), View_permute),
+        {First, Second} = lists:split(min(length(View_permute), round(C/2)-1), View_permute),
         Buffer_append = lists:append(Buffer, First),
         IDsender ! #{view_pull =>  Buffer_append}, %send a message to the node thread to update its view
         View_select = view_select(H, S, C, View_receive, View),
@@ -57,7 +57,7 @@ sender(IDParent,IDReceiver_itself, H, S, C, Pull)->
       #{id_neighbors := Id_Peer, age_neighbors := Age} = select_peer_random_alive(View), %select a random node in its view
       Buffer = [#{id_neighbors=>IDReceiver_itself, age_neighbors=>0}],
       View_permute = highest_age_to_end(View, H),
-      {First, Second} = lists:split(min(length(View_permute), floor(C/2)-1), View_permute),
+      {First, Second} = lists:split(min(length(View_permute), round(C/2)-1), View_permute),
       Buffer_append = lists:append(Buffer, First), %generate the buffer to send
       ToTest = getId(Id_Peer), %generate the address of the receiver node where the buffer has to be sent
       case whereis(ToTest) =/= undefined of true ->

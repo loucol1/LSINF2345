@@ -1,7 +1,8 @@
 -module(main_doc).
--export([main/5, indegree/2]).
+-export([main/5, indegree/2, main/0]).
 -import(linkedlist, [create_list_node/1, node_initialisation/5, getId/1, select_peer_random/1, node_create/6]).
 
+main()-> main(128,4,3,7,'true').
 % Main function to launch the scenario
 % N = total number of nodes in the network = 128
 % H, S and C are the parameter of the peer sampling. (3,4,7) for the healer and (4,3,7) for the swapper
@@ -10,12 +11,10 @@
 %         Write in a file output.txt the data relative to the network. Format: Count NodeId [View]
 main(N, H, S, C, Pull) ->
     {ok, Output} = file:open("boxplot.txt", [write]),
-    Linked_list = create_list_node(N),
-    {First, Second} = lists:split(floor(0.4*N), Linked_list),
+    Linked_list = linkedlist:create_list_node(N),
+    {First, Second} = lists:split(trunc(0.4*N), Linked_list),
     List_id_node = node_initialisation(First, H, S, C, Pull),
     compteur(List_id_node, N, H, S, C, Pull, Second, Output).
-
-
 
 %This function manages the scenario. By using the clock (timer:sleep) this function manages the clock cycle.
 %This function interacts with the nodes by sending messages when an event happens : end of a cycle, the death of a node...
@@ -29,7 +28,7 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max, Output) ->
 
     if (Count=:=30) or (Count=:=60) -> % growing phase - add 20% of the nodes
         io:format("Count = ~p~n", [Count]),
-        {Node_to_add, Node_not_to_add} = lists:split(floor(0.2*N), Second), %select the node to add in the network from the linkedList Second
+        {Node_to_add, Node_not_to_add} = lists:split(trunc(0.2*N), Second), %select the node to add in the network from the linkedList Second
         List_id_node_new = node_initialisation(Node_to_add, H, S, C, Pull), %create the node
         List_Big = lists:append(List_id_node, List_id_node_new), %update the list_id_node with the new addresses
         if (Count =:=60)-> % indegree computation
@@ -56,7 +55,7 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max, Output) ->
 
     Count =:= 120 -> % kill node phase
         io:format("Count = ~p~n", [Count]),
-        List_alive = node_to_kill(List_id_node, floor(0.6*N)), %kill 60% of the alive node
+        List_alive = node_to_kill(List_id_node, trunc(0.6*N)), %kill 60% of the alive node
         List_tuple = broadcast_ask_view(List_alive),
         print_graph(List_tuple, Count), %print network information in output.txt
         List_view = return_listView(List_tuple),
@@ -80,10 +79,10 @@ compteur(List_id_node, N, H, S, C, Pull, Count, Second, Id_max, Output) ->
         end,
         View = [#{id_neighbors => Id_receiver, age_neighbors => 0}], %create the same view for all the recovered nodes
         io:format("View recovery: ~p~n", [View]),
-        List_recovery = create_list_recovery(N, floor(0.6*floor(0.6*N)), View), % recover 60% of the node
+        List_recovery = create_list_recovery(N, trunc(0.6*trunc(0.6*N)), View), % recover 60% of the node
         List_address_recovery = node_initialisation(List_recovery, H, S, C, Pull),
         broadcast_timeout(lists:append(List_id_node, List_address_recovery)), %send a message to all the nodes because it is the end of the clock cycle
-        compteur(lists:append(List_id_node, List_address_recovery), N, H, S, C, Pull, Count+1, Second, Id_max+floor(0.6*floor(0.6*N)), Output);
+        compteur(lists:append(List_id_node, List_address_recovery), N, H, S, C, Pull, Count+1, Second, Id_max+trunc(0.6*trunc(0.6*N)), Output);
 
     Count =:= 180 -> % end of the scenario - all the threads have to stop
         io:format("Count = ~p~n", [Count]),
